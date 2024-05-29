@@ -1,0 +1,9 @@
+configparser
+pytz
+pandas
+snowflake-connector-python
+PyMySQL
+boto3
+python-dotenv
+streamlit
+streamlit-pandas-profiling
