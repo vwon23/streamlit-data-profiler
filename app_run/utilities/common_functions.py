@@ -17,9 +17,21 @@ from email.mime.text import MIMEText
 
 import streamlit as st
 
+### - functions used for initializing global variables and logger - ###
+
+## function to initialize global variables and logger ##
+def initialize(path_app_run, loggername):
+    set_gvar(path_app_run)
+    set_environment_variables()
+    get_config()
+    get_current_datetime()
+
+    logfile_name = f'{loggername}_{gvar.current_date_pst}.log'
+    logger = set_logger(loggername, logfile_name)
+    return logger
 
 ###---  initializing function to run python scripts ---###
-def init(path_app_run):
+def set_gvar(path_app_run):
     '''
     Creates global variable class gvar to handle the variables across scripts and functions. Sets the provided app_run path to gvar.path_app_run.
 
@@ -107,6 +119,7 @@ def get_config():
     ## e-mail variables
     gvar.email_host = config.get('EMAIL', 'host')
     gvar.email_from = config.get('EMAIL', 'from')
+    gvar.email_to = config.get('EMAIL', 'to')
 
 
 def set_logger(loggername, filename):
@@ -175,7 +188,6 @@ def convert_timestmp_int(timestmp_int):
     '''
     timestmp_pst_str = dt.datetime.fromtimestamp(timestmp_int).astimezone(timezone('US/Pacific')).strftime("%Y-%m-%d %H:%M:%S")
     return timestmp_pst_str
-
 
 
 ###---  Database functions  ---###
@@ -509,3 +521,10 @@ def send_email_df(mail_to, df):
         logger.error({e})
 
     server.close()
+
+
+#### functions used for Streamlit ####
+@st.cache_data
+def st_initialize(path_app_run, loggername):
+    st_logger = initialize(path_app_run, loggername)
+    return st_logger

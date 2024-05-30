@@ -11,17 +11,9 @@ import utilities.common_functions as cf
 import queries.sf_queries_dbt as sf_queries_dbt
 
 ## Initalize global variable and set logger ##
-cf.init(path_app_run)
-#cf.set_environment_variables()
-cf.get_config()
-cf.get_current_datetime()
-
 current_file = os.path.basename(__file__)
-loggername = current_file.split('.')[0]
-logfile_name = f'{loggername}_{cf.gvar.current_date_pst}.log'
-logger = cf.set_logger(loggername, logfile_name)
-
-recipient = 'vwon87@gmail.com'
+logger_name = current_file.split('.')[0]
+logger = cf.initialize(path_app_run, logger_name)
 
 
 def main():
@@ -35,6 +27,7 @@ def main():
     df = cf.sf_exec_query_return_df(sql)
 
     ## Send DF in an E-mail
+    recipient = cf.gvar.email_to
     cf.send_email_df(recipient, df)
 
 

@@ -11,15 +11,9 @@ import utilities.common_functions as cf
 import queries.sf_queries_admin as sf_queries_admin
 
 ## Initalize global variable and set logger ##
-cf.init(path_app_run)
-#cf.set_environment_variables()
-cf.get_config()
-cf.get_current_datetime()
-
 current_file = os.path.basename(__file__)
-loggername = current_file.split('.')[0]
-logfile_name = f'{loggername}_{cf.gvar.current_date_pst}.log'
-logger = cf.set_logger(loggername, logfile_name)
+logger_name = current_file.split('.')[0]
+logger = cf.initialize(path_app_run, logger_name)
 
 
 def main():
