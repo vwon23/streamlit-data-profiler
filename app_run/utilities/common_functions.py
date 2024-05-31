@@ -377,7 +377,7 @@ def sf_exec_query_return_df(query):
 
     '''
 
-    logger.info('Executing query:\n' + query)
+    logger.info('Executing query:' + query)
 
     try:
         sf_dict_cursor = gvar.sf_conn.cursor(sf.DictCursor)
@@ -388,7 +388,7 @@ def sf_exec_query_return_df(query):
 
 
     result_df = pd.DataFrame(result)
-    logger.info('Stored result of query into DataFrame')
+    logger.info('Stored result of executed query into DataFrame successfully')
 
     return result_df
 

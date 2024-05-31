@@ -94,7 +94,7 @@ if st.session_state.connect_to_sf:
 
 ## If connected to snowflake, show databases, schemas, tables and generated SQL to query ##
 def generate_sql_base(db, schema, table):
-    sql = f'select * from {db}.{schema}.{table}'
+    sql = f'select *\nfrom {db}.{schema}.{table}'
     st.session_state.sql_base = sql
 
 def update_sql(sql):
