@@ -18,11 +18,9 @@ from email.mime.text import MIMEText
 import streamlit as st
 
 ### - functions used for initializing global variables and logger - ###
-
 ## function to initialize global variables and logger ##
 def initialize(path_app_run, loggername):
     set_gvar(path_app_run)
-    set_environment_variables()
     get_config()
     get_current_datetime()
 
@@ -30,7 +28,7 @@ def initialize(path_app_run, loggername):
     logger = set_logger(loggername, logfile_name)
     return logger
 
-###---  initializing function to run python scripts ---###
+## set global variable and add path of app_run ##
 def set_gvar(path_app_run):
     '''
     Creates global variable class gvar to handle the variables across scripts and functions. Sets the provided app_run path to gvar.path_app_run.
@@ -50,7 +48,7 @@ def set_gvar(path_app_run):
     print(f'Application run path set as: {path_app_run}')
 
 
-def set_environment_variables():
+def set_env_from_dotenv():
     '''
     Sets os.environ values based on .env file located in parent folder of the app. (Only used for testing scripts locally)
 
@@ -73,18 +71,51 @@ def get_config():
     gvar.path_config = os.path.join(gvar.path_app_run, 'config')
     config.read(os.path.join(gvar.path_config, 'config.cfg'))
 
-    ## sensitive data derived from environment variables
-    gvar.env = os.environ['env']
-    gvar.aws_rgn = os.environ['aws_rgn']
+    gvar.run_local = config.get('ENVIRON', 'run_local')
+    gvar.dotenv = config.get('ENVIRON', 'dotenv')
 
-    gvar.mysql_username = os.environ['mysql_username']
-    gvar.mysql_password = os.environ['mysql_password']
+    ## function to derive sensitive data from environment variables or config.cfg file ##
+    def config_from_env():
+        ## Derive senetive data from environment variables (Recommended) ##
+        gvar.env = os.environ['env']
+        gvar.aws_rgn = os.environ['aws_rgn']
 
-    gvar.sf_username = os.environ['snowflake_username']
-    gvar.sf_password = os.environ['snowflake_password']
+        gvar.mysql_hostname = os.environ['mysql_hostname']
+        gvar.mysql_port = os.environ['mysql_port']
+        gvar.mysql_username = os.environ['mysql_username']
+        gvar.mysql_password = os.environ['mysql_password']
 
-    gvar.smtp_password = os.environ['smtp_password']
+        gvar.sf_account = os.environ['snowflake_account']
+        gvar.sf_username = os.environ['snowflake_username']
+        gvar.sf_password = os.environ['snowflake_password']
 
+        gvar.smtp_password = os.environ['smtp_password']
+
+    def config_from_file():
+        ## Derive senetive data from config.cfg file (Not recommended) ##
+        gvar.env = config.get('ENVIRON', 'env')
+        gvar.aws_rgn = config.get('AWS', 'aws_rgn')
+
+        gvar.mysql_hostname = config.get('MYSQL', 'hostname')
+        gvar.mysql_port = config.get('MYSQL', 'port')
+        gvar.mysql_username = config.get('MYSQL', 'username')
+        gvar.mysql_password = config.get('MYSQL', 'password')
+
+        gvar.sf_account = config.get('SNOWFLAKE', 'account')
+        gvar.sf_username = config.get('SNOWFLAKE', 'username')
+        gvar.sf_password = config.get('SNOWFLAKE', 'password')
+
+        gvar.smtp_password = config.get('EMAIL', 'password')
+
+    ## Retreived senstive information choosing method based on confirguration
+    if gvar.run_local != 'true':
+        config_from_env()
+    else:
+        if gvar.dotenv != 'true':
+            config_from_file()
+        else:
+            set_env_from_dotenv()
+            config_from_env()
 
     ## path variables
     gvar.path_app = os.path.dirname(gvar.path_app_run)
@@ -99,8 +130,6 @@ def get_config():
         os.makedirs(gvar.path_outputs)
 
     ## mysql variables
-    gvar.mysql_hostname = config.get('MYSQL', 'hostname')
-    gvar.mysql_port = config.get('MYSQL', 'port')
     gvar.mysql_database = config.get('MYSQL', 'database')
 
     ## AWS variables
@@ -108,7 +137,6 @@ def get_config():
     gvar.aws_s3_bucket_name = gvar.aws_s3_bucket.split('//')[1]
 
     ## Snowflake variables
-    gvar.sf_account = config.get('SNOWFLAKE', 'account')
     gvar.sf_admin_role = config.get('SNOWFLAKE', 'admin_role')
     gvar.sf_admin_wh = config.get('SNOWFLAKE', 'admin_wh')
 
@@ -243,10 +271,11 @@ def connect_snowflake_sso(sf_user, sf_role, sf_wh):
                                     warehouse=sf_wh
                                     )
             gvar.sf_cursor = gvar.sf_conn.cursor()
+        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
     except Exception as e:
         logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
 
-    logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
+
 
 
 def connect_snowflake_login(sf_user, sf_role, sf_wh):
@@ -272,10 +301,9 @@ def connect_snowflake_login(sf_user, sf_role, sf_wh):
                                     warehouse=sf_wh
                                     )
             gvar.sf_cursor = gvar.sf_conn.cursor()
+        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
     except Exception as e:
         logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
-
-    logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
 
 
 def connect_snowflake_admin():
@@ -301,11 +329,9 @@ def connect_snowflake_admin():
                                     warehouse=gvar.sf_admin_wh
                                     )
             gvar.sf_cursor = gvar.sf_conn.cursor()
-
+        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
     except Exception as e:
         logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
-    else:
-        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
 
 
 def connect_snowflake_app():
@@ -332,10 +358,9 @@ def connect_snowflake_app():
                                     database=gvar.sf_app_db
                                     )
             gvar.sf_cursor = gvar.sf_conn.cursor()
+        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
     except Exception as e:
         logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
-
-    logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
 
 
 def sf_exec_query_return_df(query):
