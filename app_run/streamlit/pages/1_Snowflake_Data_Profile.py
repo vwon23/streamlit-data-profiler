@@ -1,11 +1,10 @@
 import os, sys
 import streamlit as st
-import streamlit.components.v1 as components
 
 import pandas as pd
 
 from ydata_profiling import ProfileReport
-#from streamlit_pandas_profiling import st_profile_report
+from streamlit_ydata_profiling import st_profile_report
 
 ## Find path of the script then find the app_run path
 path_script = os.path.abspath(__file__)
@@ -20,7 +19,7 @@ import queries.sf_queries as sfq
 
 
 #### Streamlit code starts here ####
-st.set_page_config(page_title="Snowflake Data Profile", page_icon="📊")
+st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon="📊")
 logger_name = 'snowflake_data_profile'
 logger = cf.st_initialize(path_app_run, logger_name)
 
@@ -38,6 +37,9 @@ if 'connect_to_sf_clicked' not in st.session_state:
 
 if 'submit_query' not in st.session_state:
     st.session_state.submit_query = False
+
+if 'display_df' not in st.session_state:
+    st.session_state.display_df = False
 
 if 'display_profile' not in st.session_state:
     st.session_state.display_profile = False
@@ -147,6 +149,7 @@ def update_sql_textbox():
 
 def submit_query():
     st.session_state.submit_query = True
+    st.session_state.display_df = True
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
@@ -203,7 +206,8 @@ if st.session_state.connect_to_sf_clicked:
             label="SQL to send to Snowflake",
             key="sql_text_area",
             value=st.session_state.sql_text_area_updated,
-            on_change=update_sql_textbox
+            on_change=update_sql_textbox,
+            height=145
             )
 
         st.button('Execute SQL to query data',
@@ -217,22 +221,24 @@ if st.session_state.submit_query:
     try:
         df = return_query_df(st.session_state.sql_text_area_updated)
         st.session_state.df = df
-        st.session_state.df[:100]
-        st.session_state.display_profile = False
-        st.button('Profile Data', on_click=profile_data)
+        st.session_state.submit_query = False
     except Exception as e:
         st.error(f'Error: {e}')
-    st.session_state.submit_query = False
+
+if st.session_state.display_df:
+    st.write("Showing first 100 rows of the data:")
+    st.session_state.df[:100]
+    st.button('Profile Data', on_click=profile_data)
 
 
-## Profile the dataframe and provide report##
-## TODO: Fix the profile report to display in streamlit
+## Profile the dataframe and provide profile report##
 if st.session_state.display_profile:
     if st.session_state.run_profile:
         try:
-            pr = ProfileReport(st.session_state.df, title=db_selected + '.' + schema_selected + '.' + table_selected)
+            pr = ProfileReport(st.session_state.df,
+                               title=db_selected + '.' + schema_selected + '.' + table_selected,
+                               minimal=True, orange_mode=True)
             st.session_state.run_profile = False
         except Exception as e:
             st.error(f'Error: {e}')
-    st.write(pr.html, unsafe_allow_html = True)
-    #components.html(pr, height=800, width=800)
+    st_profile_report(pr, navbar=True)
