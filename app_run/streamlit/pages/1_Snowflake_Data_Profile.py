@@ -183,7 +183,7 @@ if st.session_state.connect_to_sf_clicked:
         generate_sql_base(db_selected, schema_selected, table_selected)
 
         if 'rows_to_limit' not in st.session_state:
-            st.session_state.rows_to_limit = 500000
+            st.session_state.rows_to_limit = 200000
 
         if 'updated_where_clause' not in st.session_state:
             st.session_state.updated_where_clause = ''
@@ -196,7 +196,7 @@ if st.session_state.connect_to_sf_clicked:
 
 
         limit_rows, where_clause, order_by_clause = st.columns(3)
-        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit, step=100000, key='limit_rows', on_change=update_rows_to_limit, args=[st.session_state.sql_base])
+        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit, min_value=1, step=50000, key='limit_rows', on_change=update_rows_to_limit, args=[st.session_state.sql_base])
         where_clause.text_input("where:", value=st.session_state.updated_where_clause, key='where_clause',  on_change=update_where_clause, args=[st.session_state.sql_base])
         order_by_clause.text_input("order by:", value=st.session_state.updated_order_by, key='order_by_clause',  on_change=update_order_clause, args=[st.session_state.sql_base])
 
@@ -210,7 +210,7 @@ if st.session_state.connect_to_sf_clicked:
             height=145
             )
 
-        st.button('Execute SQL to query data',
+        st.button('Submit SQL to query data',
                   on_click=submit_query)
 
     except Exception as e:

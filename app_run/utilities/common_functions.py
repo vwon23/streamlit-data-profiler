@@ -376,8 +376,8 @@ def sf_exec_query_return_df(query):
     Pandas DataFrame
 
     '''
-
-    logger.info('Executing query:' + query)
+    query_striped = query.strip()
+    logger.info('Executing query:\n' + query_striped)
 
     try:
         sf_dict_cursor = gvar.sf_conn.cursor(sf.DictCursor)
