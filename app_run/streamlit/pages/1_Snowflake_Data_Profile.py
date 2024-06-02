@@ -182,7 +182,7 @@ if st.session_state.connect_to_sf_clicked:
         generate_sql_base(db_selected, schema_selected, table_selected)
 
         if 'rows_to_limit' not in st.session_state:
-            st.session_state.rows_to_limit = 200000
+            st.session_state.rows_to_limit = 100000
 
         if 'updated_where_clause' not in st.session_state:
             st.session_state.updated_where_clause = ''
@@ -209,7 +209,10 @@ if st.session_state.connect_to_sf_clicked:
             height=145
             )
 
-        st.button('Submit SQL to query data',
+        # TODO: Fix columns not appearing side by side and column sizing
+        sq_preview, submit_query_button = st.columns(2)
+        sq_preview = st.write('Preview of query to submit: ' + st.session_state.sql_text_area_updated[0:40] + ' ...... ' + st.session_state.sql_text_area_updated[-40:])
+        submit_query_button = st.button('Submit SQL to query data',
                   on_click=submit_query)
 
     except Exception as e:
@@ -225,10 +228,13 @@ if st.session_state.submit_query:
         st.error(f'Error: {e}')
 
 if st.session_state.display_df:
-    st.write("Showing first 100 rows of the data:")
-    st.session_state.df[:100]
+    if st.checkbox('Show raw data'):
+        st.subheader('Raw data')
+        st.write(df)
+    else:
+        st.write("Showing first 100 rows of the queried data:")
+        st.session_state.df[:100]
     st.button('Profile Data', on_click=profile_data)
-
 
 ## Profile the dataframe and provide profile report##
 if st.session_state.display_profile:
