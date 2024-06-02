@@ -17,7 +17,6 @@ import utilities.common_functions as cf
 import queries.sf_queries as sfq
 
 
-
 #### Streamlit code starts here ####
 st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon="📊")
 logger_name = 'snowflake_data_profile'
@@ -203,7 +202,7 @@ if st.session_state.connect_to_sf_clicked:
         update_sql(st.session_state.sql_base)
 
         sql_text_area = st.text_area(
-            label="SQL to send to Snowflake",
+            label="SQL to send to Snowflake (Ctrl+Enter to update query manually):",
             key="sql_text_area",
             value=st.session_state.sql_text_area_updated,
             on_change=update_sql_textbox,
