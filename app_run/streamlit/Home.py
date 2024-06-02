@@ -11,6 +11,7 @@ st.sidebar.success("Select a page above.")
 
 st.markdown(
     """
+    This Streamlit app is devloped for profiling data from different types of databases.\n
     Source Code: https://github.com/vwon23/streamlit-data-profiler
 
     Streamlit is an open-source app framework built specifically for

@@ -6,4 +6,5 @@ PyMySQL
 boto3
 python-dotenv
 streamlit
-streamlit-pandas-profiling
+ydata_profiling
+streamlit-ydata-profiling

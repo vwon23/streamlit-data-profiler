@@ -1,6 +1,10 @@
 import os, sys
 import streamlit as st
+
 import pandas as pd
+
+from ydata_profiling import ProfileReport
+from streamlit_ydata_profiling import st_profile_report
 
 ## Find path of the script then find the app_run path
 path_script = os.path.abspath(__file__)
@@ -13,9 +17,8 @@ import utilities.common_functions as cf
 import queries.sf_queries as sfq
 
 
-
 #### Streamlit code starts here ####
-st.set_page_config(page_title="Snowflake Data Profile", page_icon="📊")
+st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon="📊")
 logger_name = 'snowflake_data_profile'
 logger = cf.st_initialize(path_app_run, logger_name)
 
@@ -24,14 +27,24 @@ st.write("This page uses snowflake-connector to query snowflake data and runs pa
 st.divider()
 
 
-## functions to connect to snowflake and list databases, schemas, tables ##
+## session states used to toggle displays ##
 if 'connect_to_sf' not in st.session_state:
     st.session_state.connect_to_sf = False
 
 if 'connect_to_sf_clicked' not in st.session_state:
     st.session_state.connect_to_sf_clicked = False
 
+if 'submit_query' not in st.session_state:
+    st.session_state.submit_query = False
 
+if 'display_df' not in st.session_state:
+    st.session_state.display_df = False
+
+if 'display_profile' not in st.session_state:
+    st.session_state.display_profile = False
+
+
+## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
@@ -43,6 +56,7 @@ def connect_to_sf(sf_user, sf_role, sf_wh):
     #cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
     st.session_state.connect_to_sf = False
 
+## functions used to connect to snowflake and return data ##
 @st.cache_data
 def list_databases(sf_role, sf_wh):
     cf.gvar.sf_conn.execute_string(sfq.use_role_wh.format(sf_role=sf_role, sf_wh=sf_wh), return_cursors=False)
@@ -60,6 +74,10 @@ def list_tables(db, schema):
     list_tables = cf.sf_exec_query_return_df(sfq.list_tables.format(db_name=db, schema=schema))
     return list_tables
 
+@st.cache_data
+def return_query_df(sql):
+    df = cf.sf_exec_query_return_df(sql)
+    return df
 
 
 ## Create a form to enter Snowflake login details ##
@@ -74,13 +92,6 @@ with st.sidebar.form('sf_connection_form'):
     if submitted:
         click_connect_sf()
 
-# st.sidebar.header("Snowflake Login")
-# # sf_account = st.sidebar.text_input("Account:", cf.gvar.sf_account)
-# sf_user_input = st.sidebar.text_input("User:", cf.gvar.sf_username)
-# sf_role_input = st.sidebar.text_input("Role:", cf.gvar.sf_admin_role)
-# sf_wh_input = st.sidebar.text_input("Warehouse:", cf.gvar.sf_admin_wh)
-# st.sidebar.button('Connect to Snowflake', on_click=click_connect_sf)
-
 
 ## When connect to snowflake button is clicked, connect to snowflake ##
 if st.session_state.connect_to_sf:
@@ -92,7 +103,8 @@ if st.session_state.connect_to_sf:
     except Exception as e:
         st.error(f'Error connecting to Snowflake: {e}')
 
-## If connected to snowflake, show databases, schemas, tables and generated SQL to query ##
+
+## If connected to snowflake, show databases, schemas, tables and generated SQL to query.##
 def generate_sql_base(db, schema, table):
     sql = f'select *\nfrom {db}.{schema}.{table}'
     st.session_state.sql_base = sql
@@ -115,8 +127,10 @@ def update_sql(sql):
 
     updated_sql = sql + where_clause + order_by_clause + limit_rows_clause
     st.session_state.sql_query = updated_sql
-    st.session_state.sql_text_area = updated_sql
+    st.session_state.sql_text_area_updated = updated_sql
 
+
+## Use st.session_state to keep values when widgets are updated ##
 def update_rows_to_limit(sql):
     st.session_state.rows_to_limit = st.session_state.limit_rows
     update_sql(sql)
@@ -128,6 +142,22 @@ def update_where_clause(sql):
 def update_order_clause(sql):
     st.session_state.updated_order_by = st.session_state.order_by_clause
     update_sql(sql)
+
+def update_sql_textbox():
+    st.session_state.sql_text_area_updated = st.session_state.sql_text_area
+
+def submit_query():
+    st.session_state.submit_query = True
+    st.session_state.display_df = True
+
+## Session state to toggle connection to Snowflake ##
+def click_connect_sf():
+    st.session_state.connect_to_sf = True
+    st.session_state.connect_to_sf_clicked = True
+
+def profile_data():
+    st.session_state.run_profile = True
+    st.session_state.display_profile = True
 
 if st.session_state.connect_to_sf_clicked:
     try:
@@ -152,7 +182,7 @@ if st.session_state.connect_to_sf_clicked:
         generate_sql_base(db_selected, schema_selected, table_selected)
 
         if 'rows_to_limit' not in st.session_state:
-            st.session_state.rows_to_limit = 500000
+            st.session_state.rows_to_limit = 100000
 
         if 'updated_where_clause' not in st.session_state:
             st.session_state.updated_where_clause = ''
@@ -165,19 +195,55 @@ if st.session_state.connect_to_sf_clicked:
 
 
         limit_rows, where_clause, order_by_clause = st.columns(3)
-        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit, step=100000, key='limit_rows', on_change=update_rows_to_limit, args=[st.session_state.sql_base])
+        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit, min_value=1, step=50000, key='limit_rows', on_change=update_rows_to_limit, args=[st.session_state.sql_base])
         where_clause.text_input("where:", value=st.session_state.updated_where_clause, key='where_clause',  on_change=update_where_clause, args=[st.session_state.sql_base])
         order_by_clause.text_input("order by:", value=st.session_state.updated_order_by, key='order_by_clause',  on_change=update_order_clause, args=[st.session_state.sql_base])
 
         update_sql(st.session_state.sql_base)
 
-
         sql_text_area = st.text_area(
-            label="SQL to send to Snowflake",
+            label="SQL to send to Snowflake (Ctrl+Enter to update query manually):",
             key="sql_text_area",
+            value=st.session_state.sql_text_area_updated,
+            on_change=update_sql_textbox,
+            height=145
             )
 
-        st.button('Execute SQL to query data')
+        # TODO: Fix columns not appearing side by side and column sizing
+        sq_preview, submit_query_button = st.columns(2)
+        sq_preview = st.write('Preview of query to submit: ' + st.session_state.sql_text_area_updated[0:40] + ' ...... ' + st.session_state.sql_text_area_updated[-40:])
+        submit_query_button = st.button('Submit SQL to query data',
+                  on_click=submit_query)
 
     except Exception as e:
         st.error(f'Error: {e}')
+
+## When Execute SQL button  button is clicked, connect to snowflake and return result into dataframe ##
+if st.session_state.submit_query:
+    try:
+        df = return_query_df(st.session_state.sql_text_area_updated)
+        st.session_state.df = df
+        st.session_state.submit_query = False
+    except Exception as e:
+        st.error(f'Error: {e}')
+
+if st.session_state.display_df:
+    if st.checkbox('Show raw data'):
+        st.subheader('Raw data')
+        st.write(df)
+    else:
+        st.write("Showing first 100 rows of the queried data:")
+        st.session_state.df[:100]
+    st.button('Profile Data', on_click=profile_data)
+
+## Profile the dataframe and provide profile report##
+if st.session_state.display_profile:
+    if st.session_state.run_profile:
+        try:
+            pr = ProfileReport(st.session_state.df,
+                               title=db_selected + '.' + schema_selected + '.' + table_selected,
+                               minimal=True, orange_mode=True)
+            st.session_state.run_profile = False
+        except Exception as e:
+            st.error(f'Error: {e}')
+    st_profile_report(pr, navbar=True)
