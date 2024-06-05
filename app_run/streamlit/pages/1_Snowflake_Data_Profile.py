@@ -80,16 +80,17 @@ def return_query_df(sql):
     return df
 
 
-## Create a form to enter Snowflake login details ##
+## Create a form to enter login information to connect to Snowflake ##
 with st.sidebar.form('sf_connection_form'):
     st.header("Snowflake Login")
-    # sf_account = st.sidebar.text_input("Account:", cf.gvar.sf_account)
+
     sf_user_input = st.text_input("User:", cf.gvar.sf_username)
     sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
     sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
 
-    submitted = st.form_submit_button('Connect to Snowflake')
-    if submitted:
+    sso_checkbox = st.checkbox("Use SSO", value=False)
+    connect_button = st.form_submit_button('Connect to Snowflake')
+    if connect_button:
         click_connect_sf()
 
 
