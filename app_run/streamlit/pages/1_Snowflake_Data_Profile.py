@@ -1,10 +1,12 @@
 import os, sys
 import streamlit as st
-
 import pandas as pd
 
 from ydata_profiling import ProfileReport
 from streamlit_ydata_profiling import st_profile_report
+
+import dtale
+
 
 ## Find path of the script then find the app_run path
 path_script = os.path.abspath(__file__)
@@ -28,56 +30,42 @@ st.divider()
 
 
 ## session states used to toggle displays ##
+if 'sf_sso_login' not in st.session_state:
+    st.session_state.sf_sso_login = True
+
 if 'connect_to_sf' not in st.session_state:
     st.session_state.connect_to_sf = False
 
 if 'connect_to_sf_clicked' not in st.session_state:
     st.session_state.connect_to_sf_clicked = False
 
-if 'submit_query' not in st.session_state:
-    st.session_state.submit_query = False
+if 'query_submitted' not in st.session_state:
+    st.session_state.query_submitted = False
 
 if 'display_df' not in st.session_state:
     st.session_state.display_df = False
 
-if 'display_profile' not in st.session_state:
-    st.session_state.display_profile = False
+if 'display_pandas_profile' not in st.session_state:
+    st.session_state.display_pandas_profile = False
 
+if 'display_dtale_profile' not in st.session_state:
+    st.session_state.display_dtale_profile = False
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
+    st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
 ## Connect to Snowflake then set the session state to False to prevent reconnection ##
 @st.cache_data
 def connect_to_sf(sf_user, sf_role, sf_wh):
-    cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
-    #cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
+    if st.session_state.sf_sso_login:
+        cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
+    else:
+        cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
     st.session_state.connect_to_sf = False
 
-## functions used to connect to snowflake and return data ##
-@st.cache_data
-def list_databases(sf_role, sf_wh):
-    cf.gvar.sf_conn.execute_string(sfq.use_role_wh.format(sf_role=sf_role, sf_wh=sf_wh), return_cursors=False)
-    df = cf.sf_exec_query_return_df(sfq.show_databases)
-    list_dbs = df['name'].tolist()
-    return list_dbs
-
-@st.cache_data
-def list_schemas(db):
-    list_schemas = cf.sf_exec_query_return_df(sfq.list_schemas.format(db_name=db))
-    return list_schemas
-
-@st.cache_data
-def list_tables(db, schema):
-    list_tables = cf.sf_exec_query_return_df(sfq.list_tables.format(db_name=db, schema=schema))
-    return list_tables
-
-@st.cache_data
-def return_query_df(sql):
-    df = cf.sf_exec_query_return_df(sql)
-    return df
 
 
 ## Create a form to enter login information to connect to Snowflake ##
@@ -88,7 +76,7 @@ with st.sidebar.form('sf_connection_form'):
     sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
     sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
 
-    sso_checkbox = st.checkbox("Use SSO", value=False)
+    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=st.session_state.sf_sso_login)
     connect_button = st.form_submit_button('Connect to Snowflake')
     if connect_button:
         click_connect_sf()
@@ -103,6 +91,7 @@ if st.session_state.connect_to_sf:
         connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh)
     except Exception as e:
         st.error(f'Error connecting to Snowflake: {e}')
+
 
 
 ## If connected to snowflake, show databases, schemas, tables and generated SQL to query.##
@@ -144,21 +133,51 @@ def update_order_clause(sql):
     st.session_state.updated_order_by = st.session_state.order_by_clause
     update_sql(sql)
 
-def update_sql_textbox():
-    st.session_state.sql_text_area_updated = st.session_state.sql_text_area
-
 def submit_query():
-    st.session_state.submit_query = True
-    st.session_state.display_df = True
+    st.session_state.query_submitted = True
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
-def profile_data():
-    st.session_state.run_profile = True
-    st.session_state.display_profile = True
+def profile_data_panda():
+    st.session_state.display_pandas_profile = True
+    st.session_state.run_pandas_profile = True
+
+def profile_data_dtale(df):
+    st.session_state.display_dtale_profile = True
+    st.session_state.dtale = dtale.show(df, host='localhost')
+    st.session_state.dtale.open_browser()
+
+def stop_dtale():
+    st.session_state.dtale.kill()
+    st.session_state.display_dtale_profile = False
+
+
+## functions used to retreive data from snowflake and return df ##
+@st.cache_data
+def list_databases(sf_role, sf_wh):
+    cf.gvar.sf_conn.execute_string(sfq.use_role_wh.format(sf_role=sf_role, sf_wh=sf_wh), return_cursors=False)
+    df = cf.sf_exec_query_return_df(sfq.show_databases)
+    list_dbs = df['name'].tolist()
+    return list_dbs
+
+@st.cache_data
+def list_schemas(db):
+    list_schemas = cf.sf_exec_query_return_df(sfq.list_schemas.format(db_name=db))
+    return list_schemas
+
+@st.cache_data
+def list_tables(db, schema):
+    list_tables = cf.sf_exec_query_return_df(sfq.list_tables.format(db_name=db, schema=schema))
+    return list_tables
+
+@st.cache_data
+def return_query_df(sql):
+    df = cf.sf_exec_query_return_df(sql)
+    return df
+
 
 if st.session_state.connect_to_sf_clicked:
     try:
@@ -206,45 +225,58 @@ if st.session_state.connect_to_sf_clicked:
             label="SQL to send to Snowflake (Ctrl+Enter to update query manually):",
             key="sql_text_area",
             value=st.session_state.sql_text_area_updated,
-            on_change=update_sql_textbox,
             height=145
             )
 
-        # TODO: Fix columns not appearing side by side and column sizing
-        sq_preview, submit_query_button = st.columns(2)
-        sq_preview = st.write('Preview of query to submit: ' + st.session_state.sql_text_area_updated[0:40] + ' ...... ' + st.session_state.sql_text_area_updated[-40:])
+        ## Preview of query to submit and submit button ##
+        sq_preview = st.write('Preview of query to submit: ' + sql_text_area[0:40] + ' ...... ' + sql_text_area[-40:])
         submit_query_button = st.button('Submit SQL to query data',
                   on_click=submit_query)
 
     except Exception as e:
         st.error(f'Error: {e}')
 
+
 ## When Execute SQL button  button is clicked, connect to snowflake and return result into dataframe ##
-if st.session_state.submit_query:
+if st.session_state.query_submitted:
     try:
-        df = return_query_df(st.session_state.sql_text_area_updated)
+        df = return_query_df(sql_text_area)
         st.session_state.df = df
-        st.session_state.submit_query = False
+        st.session_state.display_df = True
+        st.session_state.display_entire_df = False
+        st.session_state.display_pandas_profile = False
+        st.session_state.query_submitted = False
     except Exception as e:
         st.error(f'Error: {e}')
 
 if st.session_state.display_df:
-    if st.checkbox('Show raw data'):
-        st.subheader('Raw data')
-        st.write(df)
+    if st.session_state.display_entire_df:
+        st.write("All of queried data:")
+        st.write(st.session_state.df)
     else:
-        st.write("Showing first 100 rows of the queried data:")
+        st.write("Displaying first 100 rows of queried data:")
         st.session_state.df[:100]
-    st.button('Profile Data', on_click=profile_data)
+
+    st.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
+    st.button('Profile Data using Pandas Profile', on_click=profile_data_panda)
+    st.button('Profile Data using Dtale', on_click=profile_data_dtale, args=[st.session_state.df])
+
 
 ## Profile the dataframe and provide profile report##
-if st.session_state.display_profile:
-    if st.session_state.run_profile:
+if st.session_state.display_pandas_profile:
+    if st.session_state.run_pandas_profile:
         try:
             pr = ProfileReport(st.session_state.df,
                                title=db_selected + '.' + schema_selected + '.' + table_selected,
-                               minimal=True, orange_mode=True)
-            st.session_state.run_profile = False
+                               minimal=True,
+                               correlations={"cramers": {"calculate": False}},
+                               orange_mode=True)
+            logger.info(f'Profile report created for {db_selected}.{schema_selected}.{table_selected}')
+            st.session_state.run_pandas_profile = False
         except Exception as e:
             st.error(f'Error: {e}')
     st_profile_report(pr, navbar=True)
+
+## Profile the dataframe using dtale library ##
+if st.session_state.display_dtale_profile:
+    st.button('Stop running dtale', key='stop_dtale_button', on_click=stop_dtale)

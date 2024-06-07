@@ -9,3 +9,4 @@ zold*/
 zold*.*
 *.sh
 Dockerfile
+app_run/config/config_*.cfg
