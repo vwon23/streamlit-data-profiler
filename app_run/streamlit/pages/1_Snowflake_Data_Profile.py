@@ -24,14 +24,14 @@ st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon=
 logger_name = 'snowflake_data_profile'
 logger = cf.st_initialize(path_app_run, logger_name)
 
-st.markdown("# Snowflake Data PandasProfile")
-st.write("This page uses snowflake-connector to query snowflake data and runs pandas profiling on queried data.")
+st.markdown("# Snowflake Data Profile")
+st.write("This page uses snowflake-connector to query snowflake data. Then queried data can be profiled using pandas profiling or dtale.")
 st.divider()
 
 
 ## session states used to toggle displays ##
-if 'sf_sso_login' not in st.session_state:
-    st.session_state.sf_sso_login = True
+# if 'sf_sso_login' not in st.session_state:
+#     st.session_state.sf_sso_login = True
 
 if 'connect_to_sf' not in st.session_state:
     st.session_state.connect_to_sf = False
@@ -53,14 +53,14 @@ if 'display_dtale_profile' not in st.session_state:
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
-    st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
+    #st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
 ## Connect to Snowflake then set the session state to False to prevent reconnection ##
 @st.cache_data
-def connect_to_sf(sf_user, sf_role, sf_wh):
-    if st.session_state.sf_sso_login:
+def connect_to_sf(sf_user, sf_role, sf_wh, sso):
+    if sso:
         cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
     else:
         cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
@@ -76,8 +76,9 @@ with st.sidebar.form('sf_connection_form'):
     sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
     sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
 
-    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=st.session_state.sf_sso_login)
+    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=True)
     connect_button = st.form_submit_button('Connect to Snowflake')
+
     if connect_button:
         click_connect_sf()
 
@@ -88,7 +89,7 @@ if st.session_state.connect_to_sf:
     st.session_state.sf_role = sf_role_input
     st.session_state.sf_wh = sf_wh_input
     try:
-        connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh)
+        connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh, st.session_state.sf_sso_checkbox)
     except Exception as e:
         st.error(f'Error connecting to Snowflake: {e}')
 
@@ -229,8 +230,9 @@ if st.session_state.connect_to_sf_clicked:
             )
 
         ## Preview of query to submit and submit button ##
-        sq_preview = st.write('Preview of query to submit: ' + sql_text_area[0:40] + ' ...... ' + sql_text_area[-40:])
-        submit_query_button = st.button('Submit SQL to query data',
+        sq_preview, submit_query_button = st.columns([4, 1])
+        sq_preview.write('Preview of query to submit: ' + sql_text_area[0:50] + ' ...... ' + sql_text_area[-50:])
+        submit_query_button.button('Submit SQL to query data',
                   on_click=submit_query)
 
     except Exception as e:
@@ -257,9 +259,12 @@ if st.session_state.display_df:
         st.write("Displaying first 100 rows of queried data:")
         st.session_state.df[:100]
 
-    st.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
-    st.button('Profile Data using Pandas Profile', on_click=profile_data_panda)
-    st.button('Profile Data using Dtale', on_click=profile_data_dtale, args=[st.session_state.df])
+
+
+    diplay_all_df, pandas_profile_button, dtale_profile_button = st.columns([4, 2, 2])
+    diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
+    pandas_profile_button.button('Profile Data using Pandas Profile', on_click=profile_data_panda)
+    dtale_profile_button.button('Profile Data using Dtale', on_click=profile_data_dtale, args=[st.session_state.df])
 
 
 ## Profile the dataframe and provide profile report##
