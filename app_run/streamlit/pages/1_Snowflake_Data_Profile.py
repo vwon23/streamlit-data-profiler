@@ -4,8 +4,9 @@ import pandas as pd
 
 from ydata_profiling import ProfileReport
 from streamlit_ydata_profiling import st_profile_report
-
 import dtale
+
+import utils.st_functions as stf
 
 
 ## Find path of the script then find the app_run path
@@ -22,7 +23,7 @@ import queries.sf_queries as sfq
 #### Streamlit code starts here ####
 st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon="📊")
 logger_name = 'snowflake_data_profile'
-logger = cf.st_initialize(path_app_run, logger_name)
+logger = stf.st_initialize(path_app_run, logger_name)
 
 st.markdown("# Snowflake Data Profile")
 st.write("This page uses snowflake-connector to query snowflake data. Then queried data can be profiled using pandas profiling or dtale.")
@@ -30,9 +31,6 @@ st.divider()
 
 
 ## session states used to toggle displays ##
-# if 'sf_sso_login' not in st.session_state:
-#     st.session_state.sf_sso_login = True
-
 if 'connect_to_sf' not in st.session_state:
     st.session_state.connect_to_sf = False
 
@@ -51,24 +49,13 @@ if 'display_pandas_profile' not in st.session_state:
 if 'display_dtale_profile' not in st.session_state:
     st.session_state.display_dtale_profile = False
 
-## Session state to toggle connection to Snowflake ##
+
+### Form to enter login information to connect to Snowflake ###
 def click_connect_sf():
     #st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
-## Connect to Snowflake then set the session state to False to prevent reconnection ##
-@st.cache_data
-def connect_to_sf(sf_user, sf_role, sf_wh, sso):
-    if sso:
-        cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
-    else:
-        cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
-    st.session_state.connect_to_sf = False
-
-
-
-## Create a form to enter login information to connect to Snowflake ##
 with st.sidebar.form('sf_connection_form'):
     st.header("Snowflake Login")
 
@@ -83,7 +70,15 @@ with st.sidebar.form('sf_connection_form'):
         click_connect_sf()
 
 
-## When connect to snowflake button is clicked, connect to snowflake ##
+### Connect to Snowflake then set the session state to False to prevent reconnection ###
+@st.cache_data
+def connect_to_sf(sf_user, sf_role, sf_wh, sso):
+    if sso:
+        cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
+    else:
+        cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
+    st.session_state.connect_to_sf = False
+
 if st.session_state.connect_to_sf:
     st.session_state.sf_user = sf_user_input
     st.session_state.sf_role = sf_role_input
@@ -121,7 +116,7 @@ def update_sql(sql):
     st.session_state.sql_text_area_updated = updated_sql
 
 
-## Use st.session_state to keep values when widgets are updated ##
+## Use st.session_state to keep string values when widgets are updated ##
 def update_rows_to_limit(sql):
     st.session_state.rows_to_limit = st.session_state.limit_rows
     update_sql(sql)
@@ -137,64 +132,23 @@ def update_order_clause(sql):
 def submit_query():
     st.session_state.query_submitted = True
 
-## Session state to toggle connection to Snowflake ##
-def click_connect_sf():
-    st.session_state.connect_to_sf = True
-    st.session_state.connect_to_sf_clicked = True
-
-def profile_data_panda():
-    st.session_state.display_pandas_profile = True
-    st.session_state.run_pandas_profile = True
-
-def profile_data_dtale(df):
-    st.session_state.display_dtale_profile = True
-    st.session_state.dtale = dtale.show(df, host='localhost')
-    st.session_state.dtale.open_browser()
-
-def stop_dtale():
-    st.session_state.dtale.kill()
-    st.session_state.display_dtale_profile = False
-
-
-## functions used to retreive data from snowflake and return df ##
-@st.cache_data
-def list_databases(sf_role, sf_wh):
-    cf.gvar.sf_conn.execute_string(sfq.use_role_wh.format(sf_role=sf_role, sf_wh=sf_wh), return_cursors=False)
-    df = cf.sf_exec_query_return_df(sfq.show_databases)
-    list_dbs = df['name'].tolist()
-    return list_dbs
-
-@st.cache_data
-def list_schemas(db):
-    list_schemas = cf.sf_exec_query_return_df(sfq.list_schemas.format(db_name=db))
-    return list_schemas
-
-@st.cache_data
-def list_tables(db, schema):
-    list_tables = cf.sf_exec_query_return_df(sfq.list_tables.format(db_name=db, schema=schema))
-    return list_tables
-
-@st.cache_data
-def return_query_df(sql):
-    df = cf.sf_exec_query_return_df(sql)
-    return df
 
 
 if st.session_state.connect_to_sf_clicked:
     try:
         column_db, column_schema, column_table = st.columns(3)
 
-        list_dbs = list_databases(st.session_state.sf_role, st.session_state.sf_wh)
+        list_dbs = stf.list_sf_databases(st.session_state.sf_role, st.session_state.sf_wh)
         db_selected = column_db.selectbox(
         "Select a database:",
         list_dbs)
 
-        df_schemas = list_schemas(db_selected)
+        df_schemas = stf.list_sf_schemas(db_selected)
         schema_selected = column_schema.selectbox(
         "Select a schema:",
         df_schemas)
 
-        df_tables = list_tables(db_selected, schema_selected)
+        df_tables = stf.list_sf_tables(db_selected, schema_selected)
         table_selected = column_table.selectbox(
         "Select a table:",
         df_tables)
@@ -239,10 +193,20 @@ if st.session_state.connect_to_sf_clicked:
         st.error(f'Error: {e}')
 
 
-## When Execute SQL button  button is clicked, connect to snowflake and return result into dataframe ##
+### When Execute SQL button  button is clicked, connect to snowflake and return result into dataframe ###
+## functions for profiling the queried data when profile buttons are clicked ##
+def profile_data_panda():
+    st.session_state.display_pandas_profile = True
+    st.session_state.run_pandas_profile = True
+
+def profile_data_dtale(df):
+    st.session_state.display_dtale_profile = True
+    st.session_state.dtale = dtale.show(df, host='localhost')
+    st.session_state.dtale.open_browser()
+
 if st.session_state.query_submitted:
     try:
-        df = return_query_df(sql_text_area)
+        df = stf.return_sf_query_df(sql_text_area)
         st.session_state.df = df
         st.session_state.display_df = True
         st.session_state.display_entire_df = False
@@ -259,15 +223,33 @@ if st.session_state.display_df:
         st.write("Displaying first 100 rows of queried data:")
         st.session_state.df[:100]
 
-
-
     diplay_all_df, pandas_profile_button, dtale_profile_button = st.columns([4, 2, 2])
     diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
     pandas_profile_button.button('Profile Data using Pandas Profile', on_click=profile_data_panda)
     dtale_profile_button.button('Profile Data using Dtale', on_click=profile_data_dtale, args=[st.session_state.df])
 
 
-## Profile the dataframe and provide profile report##
+### Profile the dataframe using pandas profiling library ###
+#TODO: Convert object columns to string values to avoid pandas profiling errors
+# def convert_df_obj_to_str(df):
+#     for col in df.columns:
+#         if df[col].dtype.name == 'object':
+#             df[col] = df[col].astype(str)
+
+# if 'df_convert_pressed' not in st.session_state:
+#     st.session_state.df_convert_pressed = False
+
+# def press_df_convert():
+#     st.session_state.display_pandas_profile = False
+#     st.session_state.df_convert_pressed = True
+#     st.session_state.original_df = st.session_state.df
+#     convert_df_obj_to_str(st.session_state.df)
+
+# def reverse_df_convert():
+#     st.session_state.df = st.session_state.original_df
+#     st.session_state.df_convert_pressed = False
+
+
 if st.session_state.display_pandas_profile:
     if st.session_state.run_pandas_profile:
         try:
@@ -280,8 +262,14 @@ if st.session_state.display_pandas_profile:
             st.session_state.run_pandas_profile = False
         except Exception as e:
             st.error(f'Error: {e}')
+    #st.button('Convert Pandas DataFrame object to string values (For Pandas Profiling errors)', key='convert_df', on_click=press_df_convert)
     st_profile_report(pr, navbar=True)
 
+
 ## Profile the dataframe using dtale library ##
+def stop_dtale():
+    st.session_state.dtale.kill()
+    st.session_state.display_dtale_profile = False
+
 if st.session_state.display_dtale_profile:
     st.button('Stop running dtale', key='stop_dtale_button', on_click=stop_dtale)

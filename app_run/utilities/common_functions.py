@@ -15,7 +15,7 @@ import snowflake.connector as sf
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import streamlit as st
+# import streamlit as st
 
 ### - functions used for initializing global variables and logger - ###
 ## function to initialize global variables and logger ##
@@ -548,8 +548,8 @@ def send_email_df(mail_to, df):
     server.close()
 
 
-#### functions used for Streamlit ####
-@st.cache_data
-def st_initialize(path_app_run, loggername):
-    st_logger = initialize(path_app_run, loggername)
-    return st_logger
+# #### functions used for Streamlit ####
+# @st.cache_data
+# def st_initialize(path_app_run, loggername):
+#     st_logger = initialize(path_app_run, loggername)
+#     return st_logger
