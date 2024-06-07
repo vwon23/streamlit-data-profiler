@@ -30,8 +30,8 @@ st.divider()
 
 
 ## session states used to toggle displays ##
-if 'sf_sso_login' not in st.session_state:
-    st.session_state.sf_sso_login = True
+# if 'sf_sso_login' not in st.session_state:
+#     st.session_state.sf_sso_login = True
 
 if 'connect_to_sf' not in st.session_state:
     st.session_state.connect_to_sf = False
@@ -53,14 +53,14 @@ if 'display_dtale_profile' not in st.session_state:
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
-    st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
+    #st.session_state.sf_sso_login = st.session_state.sf_sso_checkbox
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
 ## Connect to Snowflake then set the session state to False to prevent reconnection ##
 @st.cache_data
-def connect_to_sf(sf_user, sf_role, sf_wh):
-    if st.session_state.sf_sso_login:
+def connect_to_sf(sf_user, sf_role, sf_wh, sso):
+    if sso:
         cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
     else:
         cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
@@ -76,7 +76,7 @@ with st.sidebar.form('sf_connection_form'):
     sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
     sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
 
-    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=st.session_state.sf_sso_login)
+    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=True)
     connect_button = st.form_submit_button('Connect to Snowflake')
     if connect_button:
         click_connect_sf()
@@ -88,7 +88,7 @@ if st.session_state.connect_to_sf:
     st.session_state.sf_role = sf_role_input
     st.session_state.sf_wh = sf_wh_input
     try:
-        connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh)
+        connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh, st.session_state.sf_sso_checkbox)
     except Exception as e:
         st.error(f'Error connecting to Snowflake: {e}')
 
