@@ -5,6 +5,8 @@ import pandas as pd
 from ydata_profiling import ProfileReport
 from streamlit_ydata_profiling import st_profile_report
 
+import dtale
+
 
 ## Find path of the script then find the app_run path
 path_script = os.path.abspath(__file__)
@@ -43,9 +45,11 @@ if 'query_submitted' not in st.session_state:
 if 'display_df' not in st.session_state:
     st.session_state.display_df = False
 
-if 'display_profile' not in st.session_state:
-    st.session_state.display_profile = False
+if 'display_pandas_profile' not in st.session_state:
+    st.session_state.display_pandas_profile = False
 
+if 'display_dtale_profile' not in st.session_state:
+    st.session_state.display_dtale_profile = False
 
 ## Session state to toggle connection to Snowflake ##
 def click_connect_sf():
@@ -137,10 +141,18 @@ def click_connect_sf():
     st.session_state.connect_to_sf = True
     st.session_state.connect_to_sf_clicked = True
 
-def profile_data():
-    st.session_state.display_profile = True
-    st.session_state.run_profile = True
+def profile_data_panda():
+    st.session_state.display_pandas_profile = True
+    st.session_state.run_pandas_profile = True
 
+def profile_data_dtale(df):
+    st.session_state.display_dtale_profile = True
+    st.session_state.dtale = dtale.show(df, host='localhost')
+    st.session_state.dtale.open_browser()
+
+def stop_dtale():
+    st.session_state.dtale.kill()
+    st.session_state.display_dtale_profile = False
 
 
 ## functions used to retreive data from snowflake and return df ##
@@ -232,7 +244,7 @@ if st.session_state.query_submitted:
         st.session_state.df = df
         st.session_state.display_df = True
         st.session_state.display_entire_df = False
-        st.session_state.display_profile = False
+        st.session_state.display_pandas_profile = False
         st.session_state.query_submitted = False
     except Exception as e:
         st.error(f'Error: {e}')
@@ -246,12 +258,13 @@ if st.session_state.display_df:
         st.session_state.df[:100]
 
     st.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
-    st.button('Profile Data', on_click=profile_data)
+    st.button('Profile Data using Pandas Profile', on_click=profile_data_panda)
+    st.button('Profile Data using Dtale', on_click=profile_data_dtale, args=[st.session_state.df])
 
 
 ## Profile the dataframe and provide profile report##
-if st.session_state.display_profile:
-    if st.session_state.run_profile:
+if st.session_state.display_pandas_profile:
+    if st.session_state.run_pandas_profile:
         try:
             pr = ProfileReport(st.session_state.df,
                                title=db_selected + '.' + schema_selected + '.' + table_selected,
@@ -259,8 +272,11 @@ if st.session_state.display_profile:
                                correlations={"cramers": {"calculate": False}},
                                orange_mode=True)
             logger.info(f'Profile report created for {db_selected}.{schema_selected}.{table_selected}')
-            st.session_state.run_profile = False
+            st.session_state.run_pandas_profile = False
         except Exception as e:
             st.error(f'Error: {e}')
-
     st_profile_report(pr, navbar=True)
+
+## Profile the dataframe using dtale library ##
+if st.session_state.display_dtale_profile:
+    st.button('Stop running dtale', key='stop_dtale_button', on_click=stop_dtale)
