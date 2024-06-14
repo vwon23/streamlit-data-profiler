@@ -17,7 +17,6 @@ sys.path.append(path_app_run)
 
 ## use common functions to initalize global variable and define logger ##
 import utilities.common_functions as cf
-import queries.sf_queries as sfq
 
 
 #### Streamlit code starts here ####
@@ -42,6 +41,9 @@ if 'query_submitted' not in st.session_state:
 
 if 'display_df' not in st.session_state:
     st.session_state.display_df = False
+
+if 'display_entire_df' not in st.session_state:
+    st.session_state.display_entire_df = False
 
 if 'display_pandas_profile' not in st.session_state:
     st.session_state.display_pandas_profile = False
@@ -215,10 +217,11 @@ if st.session_state.query_submitted:
     except Exception as e:
         st.error(f'Error: {e}')
 
+## display dataframe of queried data along with profile buttons ##
 if st.session_state.display_df:
     if st.session_state.display_entire_df:
         st.write("All of queried data:")
-        st.write(st.session_state.df)
+        st.session_state.df
     else:
         st.write("Displaying first 100 rows of queried data:")
         st.session_state.df[:100]
@@ -250,8 +253,12 @@ if st.session_state.display_df:
 #     st.session_state.df_convert_pressed = False
 
 
+
+## Profile the dataframe using pandas profiling library ##
 if st.session_state.display_pandas_profile:
     if st.session_state.run_pandas_profile:
+
+        ## TODO bug around missing pr
         try:
             pr = ProfileReport(st.session_state.df,
                                title=db_selected + '.' + schema_selected + '.' + table_selected,
@@ -262,8 +269,11 @@ if st.session_state.display_pandas_profile:
             st.session_state.run_pandas_profile = False
         except Exception as e:
             st.error(f'Error: {e}')
-    #st.button('Convert Pandas DataFrame object to string values (For Pandas Profiling errors)', key='convert_df', on_click=press_df_convert)
-    st_profile_report(pr, navbar=True)
+
+    try:
+        st_profile_report(pr, navbar=True)
+    except Exception as e:
+        st.error(f'Error: {e}')
 
 
 ## Profile the dataframe using dtale library ##
