@@ -1,6 +1,7 @@
 configparser
 pytz
 pandas
+SQLAlchemy
 snowflake-connector-python
 PyMySQL
 boto3
@@ -8,3 +9,4 @@ python-dotenv
 streamlit
 ydata_profiling
 streamlit-ydata-profiling
+dtale

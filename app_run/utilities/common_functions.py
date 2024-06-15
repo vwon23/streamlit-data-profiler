@@ -306,63 +306,6 @@ def connect_snowflake_login(sf_user, sf_role, sf_wh):
         logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
 
 
-def connect_snowflake_admin():
-    '''
-    Creates connection to snowflake and curor using default adming ROLE and WH. Sets connections and cursor to gvar.sf_conn and gvar.sf_cur.
-
-    Parameters
-    ---------------
-    None
-
-    Returns
-    ---------------
-    None
-
-    '''
-    try:
-        if not hasattr(gvar, 'sf_cursor'):
-            gvar.sf_conn = sf.connect(
-                                    account=gvar.sf_account,
-                                    user=gvar.sf_username,
-                                    password=gvar.sf_password,
-                                    role=gvar.sf_admin_role,
-                                    warehouse=gvar.sf_admin_wh
-                                    )
-            gvar.sf_cursor = gvar.sf_conn.cursor()
-        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
-    except Exception as e:
-        logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
-
-
-def connect_snowflake_app():
-    '''
-    Creates connection to snowflake and curor using application cred and sets it to gvar.sf_conn and gvar.sf_cur
-
-    Parameters
-    ---------------
-    None
-
-    Returns
-    ---------------
-    None
-
-    '''
-    try:
-        if not hasattr(gvar, 'sf_cursor'):
-            gvar.sf_conn = sf.connect(
-                                    account=gvar.sf_account,
-                                    user=gvar.sf_username,
-                                    password=gvar.sf_password,
-                                    role=gvar.sf_app_role,
-                                    warehouse=gvar.sf_app_wh,
-                                    database=gvar.sf_app_db
-                                    )
-            gvar.sf_cursor = gvar.sf_conn.cursor()
-        logger.info(f'Successfully connected to Snowflake account {gvar.sf_account}')
-    except Exception as e:
-        logger.error(f'Error connecting to Snowflake account {gvar.sf_account}\n' + f'{e}')
-
-
 def sf_exec_query_return_df(query):
     '''
     Sets DictCursor and executes query and returns result in dataframe.
@@ -391,7 +334,6 @@ def sf_exec_query_return_df(query):
     logger.info('Stored result of executed query into DataFrame successfully')
 
     return result_df
-
 
 
 
@@ -546,10 +488,3 @@ def send_email_df(mail_to, df):
         logger.error({e})
 
     server.close()
-
-
-# #### functions used for Streamlit ####
-# @st.cache_data
-# def st_initialize(path_app_run, loggername):
-#     st_logger = initialize(path_app_run, loggername)
-#     return st_logger
