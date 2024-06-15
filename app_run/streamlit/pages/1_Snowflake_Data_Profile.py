@@ -149,7 +149,7 @@ def reset_df_display():
     st.session_state.display_pandas_profile = False
     st.session_state.pandas_profile_failed = False
     st.session_state.df_converted = False
-    st.session_state.display_save_profile_result = False
+    st.session_state.pandas_profile_complete = False
     st.session_state.dtale_running = False
 
 def submit_query():
@@ -236,7 +236,7 @@ if st.session_state.connect_to_sf_clicked:
 def profile_data_panda(df):
     st.session_state.display_pandas_profile = True
     st.session_state.pandas_profile_failed = False
-    st.session_state.display_save_profile_result = False
+    st.session_state.pandas_profile_complete = False
 
     try:
         st.session_state.pr = ProfileReport(df,
@@ -249,6 +249,7 @@ def profile_data_panda(df):
         logger.error(f'Error: {e}')
 
 
+## save pandas profile report to output folder ##
 def save_profile_report(pr):
     file_name = 'test_profile_report.html'
     output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
@@ -257,14 +258,16 @@ def save_profile_report(pr):
         pr.to_file(output_file_path)
         logger.info(f'Profile report saved to {output_file_path}')
         st.success(f'Profile report saved to {output_file_path}')
+        # os.system(f'start {cf.gvar.path_outputs}')
     except Exception as e:
-        st.error(f'Error: {e}')
         logger.error(f'Error: {e}')
+        st.error(f'Error: {e}')
 
 
 def profile_data_dtale(df):
     if not st.session_state.dtale_running:
         st.session_state.display_pandas_profile = False
+        st.session_state.pandas_profile_complete = False
         st.session_state.dtale = dtale.show(df, host='localhost')
         st.session_state.dtale.open_browser()
         st.session_state.dtale_running = True
@@ -321,7 +324,7 @@ if st.session_state.display_df:
 if st.session_state.display_pandas_profile:
     try:
         st_profile_report(st.session_state.pr, navbar=True)
-        st.session_state.display_save_profile_result = True
+        st.session_state.pandas_profile_complete = True
     except Exception as e:
         st.error(f'Error: {e}')
         logger.error(f'Error while creating pandas profilng report')
@@ -331,14 +334,15 @@ if st.session_state.display_pandas_profile:
 
 ## buttons to toggle based on pandas profiling result ##
 if st.session_state.display_df:
-    if not st.session_state.pandas_profile_failed:
+    if not st.session_state.pandas_profile_failed and not st.session_state.pandas_profile_complete and not st.session_state.dtale_running:
         pandas_profile_button.button('Generate profile report', on_click=profile_data_panda, args=[st.session_state.df])
-    elif not st.session_state.df_converted:
+
+    if st.session_state.pandas_profile_failed and not st.session_state.df_converted:
         convert_df_button.button('Convert values to string (For Pandas Profile Error)', on_click=convert_df_obj_to_str, args=[st.session_state.df])
         pandas_profile_button.write('Profiling failed. Please convert object columns to string values to avoid errors.')
 
     if st.session_state.df_converted and not st.session_state.df_reverted:
         convert_df_button.button('Revert back to original DataFrame', on_click=revert_df_original)
 
-    if st.session_state.display_pandas_profile and not st.session_state.pandas_profile_failed:
+    if st.session_state.pandas_profile_complete and not st.session_state.pandas_profile_failed:
         output_profile_button.button('Save profile report', on_click=save_profile_report, args=[st.session_state.pr])
