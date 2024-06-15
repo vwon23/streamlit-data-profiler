@@ -290,8 +290,8 @@ def convert_df_obj_to_str(df):
 def revert_df_original():
     df = stf.return_sf_query_df(st.session_state.sql_text_submitted)
     st.session_state.df = df
-    st.session_state.pandas_profile_failed = False
     st.session_state.df_reverted = True
+    st.session_state.df_converted = False
 
 
 ## display dataframe of queried data along with profile buttons ##
@@ -330,6 +330,7 @@ if st.session_state.display_pandas_profile:
         logger.error(f'Error while creating pandas profilng report')
         st.session_state.display_pandas_profile = False
         st.session_state.pandas_profile_failed = True
+        st.session_state.df_converted = False
 
 
 ## buttons to toggle based on pandas profiling result ##
