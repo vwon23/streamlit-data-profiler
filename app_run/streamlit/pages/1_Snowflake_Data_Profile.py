@@ -30,11 +30,8 @@ st.divider()
 
 
 ## session states used to toggle displays ##
-if 'connect_to_sf' not in st.session_state:
-    st.session_state.connect_to_sf = False
-
-if 'connect_to_sf_clicked' not in st.session_state:
-    st.session_state.connect_to_sf_clicked = False
+if 'connected_to_sf' not in st.session_state:
+    st.session_state.connected_to_sf = False
 
 if 'display_df' not in st.session_state:
     st.session_state.display_df = False
@@ -58,11 +55,25 @@ if 'dtale_running' not in st.session_state:
     st.session_state.dtale_running = False
 
 
-## Form to enter login information to connect to Snowflake ##
-def click_connect_sf():
-    st.session_state.connect_to_sf = True
-    st.session_state.connect_to_sf_clicked = True
+### 1. Connect to Snowflake when "Connect to Snowflake" button is clicked. ###
+## Connect to snowflake and set the session state to False to prevent reconnection ##
+@st.cache_data
+def connect_to_sf(sf_user, sf_role, sf_wh, sso):
+    try:
+        if sso:
+            cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
+        else:
+            cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
 
+        st.session_state.sf_user = sf_user
+        st.session_state.sf_role = sf_role
+        st.session_state.sf_wh = sf_wh
+        st.session_state.connected_to_sf = True
+    except Exception as e:
+        logger.error(f'Error: {e}')
+        st.error(f'Error connecting to Snowflake: {e}')
+
+## Form to enter login information to connect to Snowflake ##
 with st.sidebar.form('sf_connection_form'):
     st.header("Snowflake Login")
 
@@ -74,27 +85,8 @@ with st.sidebar.form('sf_connection_form'):
     connect_button = st.form_submit_button('Connect to Snowflake')
 
     if connect_button:
-        click_connect_sf()
+        connect_to_sf(sf_user_input, sf_role_input, sf_wh_input, sf_sso_checkbox)
 
-
-### 1. Connect to Snowflake when "Connect to Snowflake" button is clicked. ###
-## Connect to snowflake and set the session state to False to prevent reconnection ##
-@st.cache_data
-def connect_to_sf(sf_user, sf_role, sf_wh, sso):
-    if sso:
-        cf.connect_snowflake_sso(sf_user, sf_role, sf_wh)
-    else:
-        cf.connect_snowflake_login(sf_user, sf_role, sf_wh)
-    st.session_state.connect_to_sf = False
-
-if st.session_state.connect_to_sf:
-    st.session_state.sf_user = sf_user_input
-    st.session_state.sf_role = sf_role_input
-    st.session_state.sf_wh = sf_wh_input
-    try:
-        connect_to_sf(st.session_state.sf_user, st.session_state.sf_role, st.session_state.sf_wh, st.session_state.sf_sso_checkbox)
-    except Exception as e:
-        st.error(f'Error connecting to Snowflake: {e}')
 
 
 
@@ -160,14 +152,15 @@ def submit_query():
         st.session_state.df = df
         st.session_state.display_df = True
     except Exception as e:
-        st.error(f'Error: {e}')
         logger.error(f'Error: {e}')
+        st.error(f'Error: {e}')
 
 
-if st.session_state.connect_to_sf_clicked:
+## Execution of step #2 ##
+if st.session_state.connected_to_sf:
+    column_db, column_schema, column_table = st.columns(3)
+
     try:
-        column_db, column_schema, column_table = st.columns(3)
-
         list_dbs = stf.list_sf_databases(st.session_state.sf_role, st.session_state.sf_wh)
         db_selected = column_db.selectbox(
         "Select a database:",
@@ -218,20 +211,12 @@ if st.session_state.connect_to_sf_clicked:
         sq_preview.write('Preview of query to submit: ' + sql_text_area[0:50] + ' ...... ' + sql_text_area[-50:])
         submit_query_button.button('Submit SQL to query data', on_click=submit_query)
 
-
     except Exception as e:
+        logger.error(f'Error: {e}')
         st.error(f'Error: {e}')
-        st.session_state.connect_to_sf_clicked = False
-
-
-
-
-
-
 
 
 ### 4. Profile the dataframe using pandas profiling library or dtale library ###
-
 ## functions called to proflie dataframe when profile buttons are clicked ##
 def profile_data_panda(df):
     st.session_state.display_pandas_profile = True
@@ -245,13 +230,15 @@ def profile_data_panda(df):
                                 correlations={"cramers": {"calculate": False}},
                                 orange_mode=True)
     except Exception as e:
-        st.error(f'Error: {e}')
         logger.error(f'Error: {e}')
+        st.error(f'Error: {e}')
+
 
 
 ## save pandas profile report to output folder ##
 def save_profile_report(pr):
-    file_name = 'test_profile_report.html'
+    ## TODO add dates to output file name
+    file_name = 'snowflake_profile_report.html'
     output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
 
     try:
@@ -326,8 +313,8 @@ if st.session_state.display_pandas_profile:
         st_profile_report(st.session_state.pr, navbar=True)
         st.session_state.pandas_profile_complete = True
     except Exception as e:
-        st.error(f'Error: {e}')
         logger.error(f'Error while creating pandas profilng report')
+        st.error(f'Error: {e}')
         st.session_state.display_pandas_profile = False
         st.session_state.pandas_profile_failed = True
         st.session_state.df_converted = False
