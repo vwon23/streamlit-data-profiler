@@ -227,18 +227,35 @@ def profile_data_panda(df):
         st.session_state.pr = ProfileReport(df,
                                 title=db_selected + '.' + schema_selected + '.' + table_selected,
                                 minimal=True,
-                                correlations={"cramers": {"calculate": False}},
+                                explorative=False,
+                                correlations=None,
+                                infer_dtypes=False,
+                                vars={
+                                    "num": {"low_categorical_threshold": 0},
+                                    "cat": {
+                                        "length": True,
+                                        "characters": False,
+                                        "words": False,
+                                        "n_obs": 10,
+                                    },
+                                },
+                                # correlations={
+                                #     "pearson": {"calculate": False},
+                                #     "spearman": {"calculate": False},
+                                #     "kendall": {"calculate": False},
+                                #     "phi_k": {"calculate": False},
+                                #     "cramers": {"calculate": False},
+                                #     "recoded": {"calculate": False},
+                                #     },
                                 orange_mode=True)
     except Exception as e:
         logger.error(f'Error: {e}')
         st.error(f'Error: {e}')
 
 
-
 ## save pandas profile report to output folder ##
 def save_profile_report(pr):
-    ## TODO add dates to output file name
-    file_name = 'snowflake_profile_report.html'
+    file_name = f'{db_selected}-{schema_selected}-{table_selected}_{cf.gvar.current_date_pst}.html'
     output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
 
     try:
@@ -251,10 +268,11 @@ def save_profile_report(pr):
         st.error(f'Error: {e}')
 
 
+## function for running dtale to profile data ##
 def profile_data_dtale(df):
     if not st.session_state.dtale_running:
-        st.session_state.display_pandas_profile = False
-        st.session_state.pandas_profile_complete = False
+        # st.session_state.display_pandas_profile = False
+        # st.session_state.pandas_profile_complete = False
         st.session_state.dtale = dtale.show(df, host='localhost')
         st.session_state.dtale.open_browser()
         st.session_state.dtale_running = True
@@ -274,6 +292,7 @@ def convert_df_obj_to_str(df):
     st.session_state.pandas_profile_failed = False
 
 
+## Revert back to original DataFrame if conversion was done ##
 def revert_df_original():
     df = stf.return_sf_query_df(st.session_state.sql_text_submitted)
     st.session_state.df = df
@@ -322,12 +341,15 @@ if st.session_state.display_pandas_profile:
 
 ## buttons to toggle based on pandas profiling result ##
 if st.session_state.display_df:
-    if not st.session_state.pandas_profile_failed and not st.session_state.pandas_profile_complete and not st.session_state.dtale_running:
+    # if not st.session_state.pandas_profile_failed and not st.session_state.pandas_profile_complete and not st.session_state.dtale_running:
+    # if not st.session_state.pandas_profile_failed and not st.session_state.dtale_running:
+    if not st.session_state.pandas_profile_failed:
         pandas_profile_button.button('Generate profile report', on_click=profile_data_panda, args=[st.session_state.df])
 
-    if st.session_state.pandas_profile_failed and not st.session_state.df_converted:
-        convert_df_button.button('Convert values to string (For Pandas Profile Error)', on_click=convert_df_obj_to_str, args=[st.session_state.df])
-        pandas_profile_button.write('Profiling failed. Please convert object columns to string values to avoid errors.')
+    if not st.session_state.df_converted:
+        convert_df_button.button('Convert values to string (For Pandas Profile bugs)', on_click=convert_df_obj_to_str, args=[st.session_state.df])
+        if st.session_state.pandas_profile_failed:
+            pandas_profile_button.write('Profiling failed. Please convert object columns to string values to avoid errors.')
 
     if st.session_state.df_converted and not st.session_state.df_reverted:
         convert_df_button.button('Revert back to original DataFrame', on_click=revert_df_original)
