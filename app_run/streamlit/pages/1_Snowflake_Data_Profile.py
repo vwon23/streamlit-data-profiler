@@ -96,9 +96,10 @@ if st.session_state.connect_to_sf:
 ### 2. If connected to snowflake, show databases, schemas, tables and generated SQL to query. ###
 
 ## functions for generating SQL to query data ##
-## TODO: generate columns in sql query ##
 def generate_sql_base(db, schema, table):
-    sql = f'select *\nfrom {db}.{schema}.{table}'
+    list_columns = stf.list_sf_columns(db, schema, table)
+    str_columns = ', '.join(list_columns)
+    sql = f'select  {str_columns}\nfrom  {db}.{schema}.{table}'
     st.session_state.sql_base = sql
 
 def update_sql(sql):
@@ -278,10 +279,10 @@ if st.session_state.display_df:
         st.write("All of queried data:")
         st.session_state.df
     else:
-        st.write("Displaying first 100 rows of queried data:")
-        st.session_state.df[:100]
+        st.write("Displaying first 1000 rows of queried data:")
+        st.session_state.df[:1000]
 
-    ## sets indent of streamlit objects ##
+    ## define streamlit objects and size of columns ##
     diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button = st.columns([4, 3, 0.7, 2.3, 2, 2, 0.7, 2.3, 2])
 
     diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)

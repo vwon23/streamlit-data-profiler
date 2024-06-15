@@ -45,6 +45,14 @@ def list_sf_tables(db, schema):
     return list_tables
 
 @st.cache_data
+def list_sf_columns(db, schema, table):
+    ## TODO
+    df = cf.sf_exec_query_return_df(sfq.get_columns.format(db_name=db, schema=schema, table=table))
+    df.sort_values(by='ORDINAL_POSITION', inplace=True)
+    list_columns = df['COLUMN_NAME'].tolist()
+    return list_columns
+
+@st.cache_data
 def return_sf_query_df(sql):
     df = cf.sf_exec_query_return_df(sql)
     return df
