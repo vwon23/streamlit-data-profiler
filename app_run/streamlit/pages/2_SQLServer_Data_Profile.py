@@ -25,50 +25,51 @@ logger_name = 'mssql_data_profile'
 logger = stf.st_initialize(path_app_run, logger_name)
 
 st.markdown("# SQL Server Data Profile")
-st.write("This page uses snowflake-connector to query snowflake data. Then queried data can be profiled using pandas profiling or dtale.")
+st.write("This page uses SQLAlchemy to connect to SQL Server and query data. Then queried data can be profiled using pandas profiling or dtale.")
 st.divider()
 
+##TODO: Add SQL Server connection form here and connect to SQL Server
 
-## session states used to toggle displays ##
-if 'connect_to_sf' not in st.session_state:
-    st.session_state.connect_to_sf = False
+# ## session states used to toggle displays ##
+# if 'connect_to_sf' not in st.session_state:
+#     st.session_state.connect_to_sf = False
 
-if 'connect_to_sf_clicked' not in st.session_state:
-    st.session_state.connect_to_sf_clicked = False
+# if 'connect_to_sf_clicked' not in st.session_state:
+#     st.session_state.connect_to_sf_clicked = False
 
-if 'query_submitted' not in st.session_state:
-    st.session_state.query_submitted = False
+# if 'query_submitted' not in st.session_state:
+#     st.session_state.query_submitted = False
 
-if 'display_df' not in st.session_state:
-    st.session_state.display_df = False
+# if 'display_df' not in st.session_state:
+#     st.session_state.display_df = False
 
-if 'display_entire_df' not in st.session_state:
-    st.session_state.display_entire_df = False
+# if 'display_entire_df' not in st.session_state:
+#     st.session_state.display_entire_df = False
 
-if 'display_pandas_profile' not in st.session_state:
-    st.session_state.display_pandas_profile = False
+# if 'display_pandas_profile' not in st.session_state:
+#     st.session_state.display_pandas_profile = False
 
-if 'dtale_running' not in st.session_state:
-    st.session_state.dtale_running = False
+# if 'dtale_running' not in st.session_state:
+#     st.session_state.dtale_running = False
 
 
-## Form to enter login information to connect to Snowflake ##
-def click_connect_sf():
-    st.session_state.connect_to_sf = True
-    st.session_state.connect_to_sf_clicked = True
+# ## Form to enter login information to connect to Snowflake ##
+# def click_connect_sf():
+#     st.session_state.connect_to_sf = True
+#     st.session_state.connect_to_sf_clicked = True
 
-with st.sidebar.form('sf_connection_form'):
-    st.header("Snowflake Login")
+# with st.sidebar.form('sf_connection_form'):
+#     st.header("Snowflake Login")
 
-    sf_user_input = st.text_input("User:", cf.gvar.sf_username)
-    sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
-    sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
+#     sf_user_input = st.text_input("User:", cf.gvar.sf_username)
+#     sf_role_input = st.text_input("Role:", cf.gvar.sf_app_role)
+#     sf_wh_input = st.text_input("Warehouse:", cf.gvar.sf_app_wh)
 
-    sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=True)
-    connect_button = st.form_submit_button('Connect to Snowflake')
+#     sf_sso_checkbox = st.checkbox("Use SSO", key='sf_sso_checkbox', value=True)
+#     connect_button = st.form_submit_button('Connect to Snowflake')
 
-    if connect_button:
-        click_connect_sf()
+#     if connect_button:
+#         click_connect_sf()
 
 
 # ### 1. Connect to Snowflake when "Connect to Snowflake" button is clicked. ###
@@ -96,9 +97,10 @@ with st.sidebar.form('sf_connection_form'):
 # ### 2. If connected to snowflake, show databases, schemas, tables and generated SQL to query. ###
 
 # ## functions for generating SQL to query data ##
-# ## TODO: generate columns in sql query ##
 # def generate_sql_base(db, schema, table):
-#     sql = f'select *\nfrom {db}.{schema}.{table}'
+#     list_columns = stf.list_sf_columns(db, schema, table)
+#     str_columns = ', '.join(list_columns)
+#     sql = f'select  {str_columns}\nfrom  {db}.{schema}.{table}'
 #     st.session_state.sql_base = sql
 
 # def update_sql(sql):
@@ -254,14 +256,14 @@ with st.sidebar.form('sf_connection_form'):
 
 
 # def profile_data_dtale(df):
-#     st.session_state.display_pandas_profile = False
-#     st.session_state.dtale = dtale.show(df, host='localhost')
-#     st.session_state.dtale.open_browser()
-#     st.session_state.dtale_running = True
-
-# def stop_dtale():
-#     st.session_state.dtale.kill()
-#     st.session_state.dtale_running = False
+#     if not st.session_state.dtale_running:
+#         st.session_state.display_pandas_profile = False
+#         st.session_state.dtale = dtale.show(df, host='localhost')
+#         st.session_state.dtale.open_browser()
+#         st.session_state.dtale_running = True
+#     else:
+#         st.session_state.dtale.kill()
+#         st.session_state.dtale_running = False
 
 
 # ## Convert object columns to string values to avoid pandas profiling errors ##
@@ -278,11 +280,11 @@ with st.sidebar.form('sf_connection_form'):
 #         st.write("All of queried data:")
 #         st.session_state.df
 #     else:
-#         st.write("Displaying first 100 rows of queried data:")
-#         st.session_state.df[:100]
+#         st.write("Displaying first 1000 rows of queried data:")
+#         st.session_state.df[:1000]
 
-#     ## sets indent of streamlit objects ##
-#     diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button, stop_dtale_button = st.columns([4, 3, 0.5, 2.3, 2, 2, 0.5, 2.3, 2, 2])
+#     ## define streamlit objects and size of columns ##
+#     diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button = st.columns([4, 3, 0.7, 2.3, 2, 2, 0.7, 2.3, 2])
 
 #     diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df)
 #     if st.session_state.display_convert_df:
@@ -293,10 +295,11 @@ with st.sidebar.form('sf_connection_form'):
 #     pandas_profile_button.button('Generate profile report', on_click=profile_data_panda, args=[st.session_state.df])
 
 #     dtale_label.text('Dtale Profile:')
-#     if  not st.session_state.dtale_running:
-#         dtale_profile_button.button('Run dtale to profile data', on_click=profile_data_dtale, args=[st.session_state.df])
-#     if st.session_state.dtale_running:
-#         stop_dtale_button.button('Stop running dtale', key='stop_dtale_button', on_click=stop_dtale)
+#     if not st.session_state.dtale_running:
+#         dtale_button_text = 'Run dtale to profile data'
+#     else:
+#         dtale_button_text = 'Stop running dtale'
+#     dtale_profile_button.button(dtale_button_text, on_click=profile_data_dtale, args=[st.session_state.df])
 
 
 # ## Display Pandas Profile report ##

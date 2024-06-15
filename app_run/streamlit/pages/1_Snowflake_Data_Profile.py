@@ -25,7 +25,7 @@ logger_name = 'snowflake_data_profile'
 logger = stf.st_initialize(path_app_run, logger_name)
 
 st.markdown("# Snowflake Data Profile")
-st.write("This page uses snowflake-connector to query snowflake data. Then queried data can be profiled using pandas profiling or dtale.")
+st.write("This page uses snowflake-connector to connect to Snowflake query data. Then queried data can be profiled using pandas profiling or dtale.")
 st.divider()
 
 
