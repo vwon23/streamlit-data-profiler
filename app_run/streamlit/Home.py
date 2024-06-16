@@ -1,21 +1,23 @@
 import streamlit as st
 
-st.set_page_config(
-    page_title="Home",
-    page_icon="👋",
-)
+
+st.set_page_config(page_title="Home" ,page_icon="👋")
+
 
 st.write("# Welcome to Vince's Streamlit site! 👋")
 
-st.sidebar.success("Select a page above.")
+st.markdown(
+    """
+    ###### This Streamlit app is devloped for profiling data from different types of databases.\n
+    Source Code: https://github.com/vwon23/streamlit-data-profiler"""
+)
+
+st.divider()
 
 st.markdown(
     """
-    This Streamlit app is devloped for profiling data from different types of databases.\n
-    Source Code: https://github.com/vwon23/streamlit-data-profiler
-
     Streamlit is an open-source app framework built specifically for
-    Machine Learning and Data Science projects.
+    Machine Learning and Data Science projects using python.\n
     **👈 Select a demo from the sidebar** to see some examples
     of what Streamlit can do!
     ### Want to learn more?
@@ -29,3 +31,5 @@ st.markdown(
     - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
 """
 )
+
+st.sidebar.success("Select a page above.")

@@ -20,10 +20,11 @@ import utilities.common_functions as cf
 
 
 #### Streamlit code starts here ####
-st.set_page_config(page_title="SQL Server Data Profile",layout="wide", page_icon="📊")
-logger_name = 'mssql_data_profile'
+st.set_page_config(page_title="Snowflake Data Profile",layout="wide", page_icon="📊")
+database_name = 'ms_sql_server'
+logger_name = f'{database_name}_data_profile'
 logger = stf.st_initialize(path_app_run, logger_name)
 
-st.markdown("# SQL Server Data Profile")
-st.write("This page uses SQLAlchemy to connect to SQL Server and query data. Then queried data can be profiled using pandas profiling or dtale.")
+st.markdown("# Microsoft SQL Server Data Profile")
+st.write("This page uses SQL Alchemy library to connect to SQL Server to query data. Then queried data can be profiled using pandas profiling or dtale.")
 st.divider()
