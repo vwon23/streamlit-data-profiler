@@ -81,10 +81,10 @@ def get_config():
         gvar.env = os.environ['env']
         gvar.aws_rgn = os.environ['aws_rgn']
 
-        gvar.mysql_host = os.environ['mysql_host']
-        gvar.mysql_port = os.environ['mysql_port']
-        gvar.mysql_username = os.environ['mysql_username']
-        gvar.mysql_password = os.environ['mysql_password']
+        # gvar.mysql_host = os.environ['mysql_host']
+        # gvar.mysql_port = os.environ['mysql_port']
+        # gvar.mysql_username = os.environ['mysql_username']
+        # gvar.mysql_password = os.environ['mysql_password']
 
         gvar.mssql_host = os.environ['mssql_host']
         gvar.mssql_port = os.environ['mssql_port']
@@ -102,10 +102,10 @@ def get_config():
         gvar.env = config.get('ENVIRON', 'env')
         gvar.aws_rgn = config.get('AWS', 'aws_rgn')
 
-        gvar.mysql_host = config.get('MYSQL', 'host')
-        gvar.mysql_port = config.get('MYSQL', 'port')
-        gvar.mysql_username = config.get('MYSQL', 'username')
-        gvar.mysql_password = config.get('MYSQL', 'password')
+        # gvar.mysql_host = config.get('MYSQL', 'host')
+        # gvar.mysql_port = config.get('MYSQL', 'port')
+        # gvar.mysql_username = config.get('MYSQL', 'username')
+        # gvar.mysql_password = config.get('MYSQL', 'password')
 
         gvar.mssql_host = config.get('MSQL', 'host')
         gvar.mssql_port = config.get('MSSQL', 'port')
@@ -232,32 +232,32 @@ def convert_timestmp_int(timestmp_int):
 
 #####----  Database functions  ----#####
 
-###-- mysql functions --###
-def connect_mysql():
-    '''
-    Creates connection to mysql and returns connection
+# ###-- mysql functions --###
+# def connect_mysql():
+#     '''
+#     Creates connection to mysql and returns connection
 
-    Parameters
-    ---------------
-    None
+#     Parameters
+#     ---------------
+#     None
 
-    Returns
-    ---------------
-    conn
-        connection returned using function pymysql.connect
-    '''
+#     Returns
+#     ---------------
+#     conn
+#         connection returned using function pymysql.connect
+#     '''
 
-    conn = pymysql.connect(host=gvar.mysql_host,
-                            user=gvar.mysql_username,
-                            password=gvar.mysql_password,
-                            db=gvar.mysql_database,
-                            port=int(gvar.mysql_port)
-                            )
-    if conn is None:
-        logger.error(f'Error connecting to the MySQL database {gvar.mysql_host}')
-    else:
-        logger.info(f'MySQL connection established to {gvar.mysql_host}')
-    return conn
+#     conn = pymysql.connect(host=gvar.mysql_host,
+#                             user=gvar.mysql_username,
+#                             password=gvar.mysql_password,
+#                             db=gvar.mysql_database,
+#                             port=int(gvar.mysql_port)
+#                             )
+#     if conn is None:
+#         logger.error(f'Error connecting to the MySQL database {gvar.mysql_host}')
+#     else:
+#         logger.info(f'MySQL connection established to {gvar.mysql_host}')
+#     return conn
 
 
 
