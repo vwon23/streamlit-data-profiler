@@ -27,11 +27,11 @@ This application require python version > 3.6 and < 3.12.
    cd streamlit-data-profiler
    pip3 install -r requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
    ```
-3. Update config file `app_run/config/config.cfg` with your database connection values.
+3. Update config file `app_run/config/config.cfg` with required database connection values.
    ```sh
     [SNOWFLAKE]
-    account =
-    username =
+    account = abc
+    username = abc
 
     role = abc
     wh = abc
