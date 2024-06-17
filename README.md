@@ -10,15 +10,13 @@ This Streamlit app is devloped for profiling data from different types of databa
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Below is instruction on how to run this streamlit application
+Below is instruction on how to run this streamlit application.
 
 ### Prerequisites
 
-This application require python version > 3.6 and < 3.12
+This application require python version > 3.6 and < 3.12.
 
 ### Installation
-
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
 
 1. Clone the repository.
    ```sh
