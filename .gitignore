@@ -1,7 +1,7 @@
 __pycache__/
 logs/
 outputs/
-*.ipynb
+# *.ipynb
 ztest*.*
 zold*.*
 zwip*.*
