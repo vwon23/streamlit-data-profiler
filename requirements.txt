@@ -2,10 +2,12 @@ configparser
 pytz
 pandas
 SQLAlchemy
+pyodbc
 snowflake-connector-python
 PyMySQL
 boto3
 python-dotenv
+jupyter
 streamlit
 ydata_profiling
 streamlit-ydata-profiling

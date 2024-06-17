@@ -12,6 +12,7 @@ import smtplib
 import boto3
 import pymysql
 import snowflake.connector as sf
+import sqlalchemy as sal
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -80,7 +81,7 @@ def get_config():
         gvar.env = os.environ['env']
         gvar.aws_rgn = os.environ['aws_rgn']
 
-        gvar.mysql_hostname = os.environ['mysql_hostname']
+        gvar.mysql_host = os.environ['mysql_host']
         gvar.mysql_port = os.environ['mysql_port']
         gvar.mysql_username = os.environ['mysql_username']
         gvar.mysql_password = os.environ['mysql_password']
@@ -96,7 +97,7 @@ def get_config():
         gvar.env = config.get('ENVIRON', 'env')
         gvar.aws_rgn = config.get('AWS', 'aws_rgn')
 
-        gvar.mysql_hostname = config.get('MYSQL', 'hostname')
+        gvar.mysql_host = config.get('MYSQL', 'host')
         gvar.mysql_port = config.get('MYSQL', 'port')
         gvar.mysql_username = config.get('MYSQL', 'username')
         gvar.mysql_password = config.get('MYSQL', 'password')
@@ -218,7 +219,9 @@ def convert_timestmp_int(timestmp_int):
     return timestmp_pst_str
 
 
-###---  Database functions  ---###
+#####----  Database functions  ----#####
+
+###-- mysql functions --###
 def connect_mysql():
     '''
     Creates connection to mysql and returns connection
@@ -233,16 +236,16 @@ def connect_mysql():
         connection returned using function pymysql.connect
     '''
 
-    conn = pymysql.connect(host=gvar.mysql_hostname,
+    conn = pymysql.connect(host=gvar.mysql_host,
                             user=gvar.mysql_username,
                             password=gvar.mysql_password,
                             db=gvar.mysql_database,
                             port=int(gvar.mysql_port)
                             )
     if conn is None:
-        logger.error(f'Error connecting to the MySQL database {gvar.mysql_hostname}')
+        logger.error(f'Error connecting to the MySQL database {gvar.mysql_host}')
     else:
-        logger.info(f'MySQL connection established to {gvar.mysql_hostname}')
+        logger.info(f'MySQL connection established to {gvar.mysql_host}')
     return conn
 
 
@@ -252,15 +255,8 @@ def connect_snowflake_sso(sf_user, sf_role, sf_wh):
     '''
     Creates connection to snowflake and curor using application cred and sets it to gvar.sf_conn and gvar.sf_cur
 
-    Parameters
-    ---------------
-    None
-
-    Returns
-    ---------------
-    None
-
     '''
+    logger.info(f'Connecting to Snowflake account {gvar.sf_account} as {sf_user} using SSO')
     try:
         if not hasattr(gvar, 'sf_cursor'):
             gvar.sf_conn = sf.connect(
@@ -282,15 +278,8 @@ def connect_snowflake_login(sf_user, sf_role, sf_wh):
     '''
     Creates connection to snowflake and curor using application cred and sets it to gvar.sf_conn and gvar.sf_cur
 
-    Parameters
-    ---------------
-    None
-
-    Returns
-    ---------------
-    None
-
     '''
+    logger.info(f'Connecting to Snowflake account {gvar.sf_account} as {sf_user} using login credentials')
     try:
         if not hasattr(gvar, 'sf_cursor'):
             gvar.sf_conn = sf.connect(
@@ -336,6 +325,64 @@ def sf_exec_query_return_df(query):
     return result_df
 
 
+###---  SQL Alchemy functions ---###
+def sal_create_enginem_ms_sql(server, database):
+    '''
+    Creates engine for connecting to Microsoft SQL Server
+
+    Parameters
+    ---------------
+    server: str
+        The server name of Microsoft SQL Server
+    database: str
+        The database name of Microsoft SQL Server
+
+    Returns
+    ---------------
+    engine
+        engine returned using function sqlalchemy.create_engine
+    '''
+    engine_dict  = {
+        'MSSQL': 'mssql+pyodbc://{server}/{database}?driver={driver}',
+        'MySQL': 'mysql+pymysql://{username}:{password}@{hostname}/{database}',
+        'Oracle': 'oracle+cx_oracle://{username}:{password}@{hostname}:{port}/{database}',
+        'SQLite': 'sqlite:///{database}'
+    }
+
+    driver = 'SQL Server Native Client 11.0'
+
+    mssql_engine_url = engine_dict['MSSQL'].format(server=server, database=database, driver=driver)
+    logger.info(f'Connecting to Microsoft SQL Server {server} and database {database}')
+    try:
+        engine = sal.create_engine(mssql_engine_url)
+        logger.info(f'Successfully connected to Microsoft SQL Server {server} and database {database}')
+        return engine
+    except Exception as e:
+        logger.error(f'Error connecting to Microsoft SQL Server {server} and database {database}\n' + f'{e}')
+
+
+def sal_exec_query_return_df(engine, query):
+    '''
+    Executes query using engine and returns result in dataframe.
+
+    Parameters
+    ---------------
+    engine: engine
+        The engine created using sqlalchemy.create_engine
+    query: str
+
+    Returns
+    ---------------
+    Pandas DataFrame
+
+    '''
+    logger.info('Executing query:\n' + query)
+    try:
+        df = pd.DataFrame(engine.connect().execute(sal.text(query)))
+        logger.info('Stored result of executed query into DataFrame successfully')
+        return df
+    except Exception as e:
+        logger.error(f'Error executing query using engine\n' + f'{e}')
 
 
 ###---  AWS functions   ---###
