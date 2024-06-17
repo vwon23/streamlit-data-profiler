@@ -86,6 +86,11 @@ def get_config():
         gvar.mysql_username = os.environ['mysql_username']
         gvar.mysql_password = os.environ['mysql_password']
 
+        gvar.mssql_host = os.environ['mssql_host']
+        gvar.mssql_port = os.environ['mssql_port']
+        gvar.mssql_username = os.environ['mssql_username']
+        gvar.mssql_password = os.environ['mssql_password']
+
         gvar.sf_account = os.environ['snowflake_account']
         gvar.sf_username = os.environ['snowflake_username']
         gvar.sf_password = os.environ['snowflake_password']
@@ -101,6 +106,11 @@ def get_config():
         gvar.mysql_port = config.get('MYSQL', 'port')
         gvar.mysql_username = config.get('MYSQL', 'username')
         gvar.mysql_password = config.get('MYSQL', 'password')
+
+        gvar.mssql_host = config.get('MSQL', 'host')
+        gvar.mssql_port = config.get('MSSQL', 'port')
+        gvar.mssql_username = config.get('MSSQL', 'username')
+        gvar.mssql_password = config.get('MSSQL', 'password')
 
         gvar.sf_account = config.get('SNOWFLAKE', 'account')
         gvar.sf_username = config.get('SNOWFLAKE', 'username')
@@ -141,9 +151,13 @@ def get_config():
     gvar.sf_admin_role = config.get('SNOWFLAKE', 'admin_role')
     gvar.sf_admin_wh = config.get('SNOWFLAKE', 'admin_wh')
 
-    gvar.sf_app_role = config.get('SNOWFLAKE', 'app_role')
-    gvar.sf_app_wh = config.get('SNOWFLAKE', 'app_wh')
+    gvar.sf_app_role = config.get('SNOWFLAKE', 'role')
+    gvar.sf_app_wh = config.get('SNOWFLAKE', 'wh')
     gvar.sf_app_db = config.get('SNOWFLAKE', 'app_db')
+
+    ## Microsoft SQL Server variables
+    gvar.mssql_server = config.get('MSSQL', 'server')
+    gvar.mssql_database = config.get('MSSQL', 'database')
 
     ## e-mail variables
     gvar.email_host = config.get('EMAIL', 'host')
@@ -326,7 +340,7 @@ def sf_exec_query_return_df(query):
 
 
 ###---  SQL Alchemy functions ---###
-def sal_create_enginem_ms_sql(server, database):
+def sal_create_enginem_ms_sql(server, database, windows_auth=True):
     '''
     Creates engine for connecting to Microsoft SQL Server
 
@@ -341,17 +355,34 @@ def sal_create_enginem_ms_sql(server, database):
     ---------------
     engine
         engine returned using function sqlalchemy.create_engine
+
     '''
-    engine_dict  = {
-        'MSSQL': 'mssql+pyodbc://{server}/{database}?driver={driver}',
-        'MySQL': 'mysql+pymysql://{username}:{password}@{hostname}/{database}',
-        'Oracle': 'oracle+cx_oracle://{username}:{password}@{hostname}:{port}/{database}',
-        'SQLite': 'sqlite:///{database}'
-    }
+    mssql_engine_url_template = {
+        'windows_auth': {
+            'url_format': 'mssql+pyodbc://{server}/{database}?trusted_connection=yes&driver={driver}',
+            'driver': 'SQL Server Native Client 11.0'
+            },
+        'sql_auth': {
+            'url_format': 'mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}',
+            'driver': 'ODBC+Driver+17+for+SQL+Server'
+            }
+        }
 
-    driver = 'SQL Server Native Client 11.0'
+    # driver = 'SQL+Server+Native+Client+11.0'
 
-    mssql_engine_url = engine_dict['MSSQL'].format(server=server, database=database, driver=driver)
+    if windows_auth:
+        mssql_engine_url = mssql_engine_url_template['windows_auth']['url_format'].format(
+            server=server,
+            database=database,
+            driver=mssql_engine_url_template['windows_auth']['driver'])
+    else:
+        mssql_engine_url = mssql_engine_url_template['sql_auth']['url_format'].format(
+            username=gvar.mssql_username,
+            password=gvar.mssql_password,
+            server=server, database=database,
+            driver=mssql_engine_url_template['sql_auth']['driver'])
+
+
     logger.info(f'Connecting to Microsoft SQL Server {server} and database {database}')
     try:
         engine = sal.create_engine(mssql_engine_url)
