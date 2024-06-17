@@ -143,14 +143,11 @@ def get_config():
     ## mysql variables
     gvar.mysql_database = config.get('MYSQL', 'database')
 
-    ## AWS variables
-    gvar.aws_s3_bucket = config.get('AWS', 's3_bucket').format(env = gvar.env, aws_rgn = gvar.aws_rgn)
-    gvar.aws_s3_bucket_name = gvar.aws_s3_bucket.split('//')[1]
+    # ## AWS variables
+    # gvar.aws_s3_bucket = config.get('AWS', 's3_bucket').format(env = gvar.env, aws_rgn = gvar.aws_rgn)
+    # gvar.aws_s3_bucket_name = gvar.aws_s3_bucket.split('//')[1]
 
     ## Snowflake variables
-    gvar.sf_admin_role = config.get('SNOWFLAKE', 'admin_role')
-    gvar.sf_admin_wh = config.get('SNOWFLAKE', 'admin_wh')
-
     gvar.sf_app_role = config.get('SNOWFLAKE', 'role')
     gvar.sf_app_wh = config.get('SNOWFLAKE', 'wh')
     gvar.sf_app_db = config.get('SNOWFLAKE', 'app_db')
@@ -360,7 +357,8 @@ def sal_create_enginem_ms_sql(server, database, windows_auth=True):
     mssql_engine_url_template = {
         'windows_auth': {
             'url_format': 'mssql+pyodbc://{server}/{database}?trusted_connection=yes&driver={driver}',
-            'driver': 'SQL Server Native Client 11.0'
+            # 'driver': 'SQL Server Native Client 11.0'
+            'driver': 'ODBC+Driver+17+for+SQL+Server'
             },
         'sql_auth': {
             'url_format': 'mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}',

@@ -96,44 +96,44 @@ with st.sidebar.form('sf_connection_form'):
 
 ### 2. If connected to snowflake, show databases, schemas, tables and generated SQL to query. ###
 ## functions for generating SQL to query data ##
-def generate_sql_base(db, schema, table):
+def generate_sql_base_sf(db, schema, table):
     list_columns = stf.list_sf_columns(db, schema, table)
     str_columns = ', '.join(list_columns)
     sql = f'select  {str_columns}\nfrom  {db}.{schema}.{table}'
-    st.session_state.sql_base = sql
+    st.session_state.sql_base_sf = sql
 
 def update_sql(sql):
-    if st.session_state.updated_where_clause.strip() != '':
-        where_clause = f'\nwhere {st.session_state.updated_where_clause}'
+    if st.session_state.updated_where_clause_sf.strip() != '':
+        where_clause = f'\nwhere {st.session_state.updated_where_clause_sf}'
     else:
         where_clause = ''
 
-    if st.session_state.updated_order_by.strip() != '':
-        order_by_clause = f'\norder by {st.session_state.updated_order_by}'
+    if st.session_state.updated_order_by_sf.strip() != '':
+        order_by_clause = f'\norder by {st.session_state.updated_order_by_sf}'
     else:
         order_by_clause = ''
 
-    if st.session_state.rows_to_limit:
-        limit_rows_clause = f'\nlimit {str(st.session_state.rows_to_limit)}'
+    if st.session_state.rows_to_limit_sf:
+        limit_rows_clause = f'\nlimit {str(st.session_state.rows_to_limit_sf)}'
     else:
         limit_rows_clause = ''
 
     updated_sql = sql + where_clause + order_by_clause + limit_rows_clause
-    st.session_state.sql_query = updated_sql
-    st.session_state.sql_text_area_updated = updated_sql
+    st.session_state.sql_query_sf = updated_sql
+    st.session_state.sql_text_area_updated_sf = updated_sql
 
 
 ## Use st.session_state to keep string values when widgets are updated ##
 def update_rows_to_limit(sql):
-    st.session_state.rows_to_limit = st.session_state.limit_rows
+    st.session_state.rows_to_limit_sf = st.session_state.limit_rows_sf
     update_sql(sql)
 
 def update_where_clause(sql):
-    st.session_state.updated_where_clause = st.session_state.where_clause
+    st.session_state.updated_where_clause_sf = st.session_state.where_clause_sf
     update_sql(sql)
 
 def update_order_clause(sql):
-    st.session_state.updated_order_by = st.session_state.order_by_clause
+    st.session_state.updated_order_by_sf = st.session_state.order_by_clause_sf
     update_sql(sql)
 
 
@@ -152,7 +152,7 @@ def submit_query():
     reset_df_display()
     try:
         df = stf.return_sf_query_df(sql_text_area)
-        st.session_state.sql_text_submitted = sql_text_area
+        st.session_state.sql_text_submitted_sf = sql_text_area
         st.session_state.df_sf = df
         st.session_state.display_df_sf = True
     except Exception as e:
@@ -181,32 +181,32 @@ if st.session_state.connected_to_sf:
         df_tables)
 
         st.write("You selected:", db_selected + '.' + schema_selected + '.' + table_selected)
-        generate_sql_base(db_selected, schema_selected, table_selected)
+        generate_sql_base_sf(db_selected, schema_selected, table_selected)
 
-        if 'rows_to_limit' not in st.session_state:
-            st.session_state.rows_to_limit = 100000
+        if 'rows_to_limit_sf' not in st.session_state:
+            st.session_state.rows_to_limit_sf = 50000
 
-        if 'updated_where_clause' not in st.session_state:
-            st.session_state.updated_where_clause = ''
+        if 'updated_where_clause_sf' not in st.session_state:
+            st.session_state.updated_where_clause_sf = ''
 
-        if 'updated_order_by' not in st.session_state:
-            st.session_state.updated_order_by = ''
+        if 'updated_order_by_sf' not in st.session_state:
+            st.session_state.updated_order_by_sf = ''
 
-        if 'sql_query' not in st.session_state:
-            st.session_state.sql_query = st.session_state.sql_base + f'\nlimit {st.session_state.rows_to_limit}'
+        if 'sql_query_sf' not in st.session_state:
+            st.session_state.sql_query_sf = st.session_state.sql_base_sf + f'\nlimit {st.session_state.rows_to_limit_sf}'
 
 
         limit_rows, where_clause, order_by_clause = st.columns(3)
-        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit, min_value=1, step=50000, key='limit_rows', on_change=update_rows_to_limit, args=[st.session_state.sql_base])
-        where_clause.text_input("where:", value=st.session_state.updated_where_clause, key='where_clause',  on_change=update_where_clause, args=[st.session_state.sql_base])
-        order_by_clause.text_input("order by:", value=st.session_state.updated_order_by, key='order_by_clause',  on_change=update_order_clause, args=[st.session_state.sql_base])
+        limit_rows.number_input("limit rows:", value=st.session_state.rows_to_limit_sf, min_value=1, step=50000, key='limit_rows_sf', on_change=update_rows_to_limit, args=[st.session_state.sql_base_sf])
+        where_clause.text_input("where:", value=st.session_state.updated_where_clause_sf, key='where_clause_sf',  on_change=update_where_clause, args=[st.session_state.sql_base_sf])
+        order_by_clause.text_input("order by:", value=st.session_state.updated_order_by_sf, key='order_by_clause_sf',  on_change=update_order_clause, args=[st.session_state.sql_base_sf])
 
-        update_sql(st.session_state.sql_base)
+        update_sql(st.session_state.sql_base_sf)
 
         sql_text_area = st.text_area(
             label="SQL to send to Snowflake (Ctrl+Enter to update query manually):",
             key="sql_text_area",
-            value=st.session_state.sql_text_area_updated,
+            value=st.session_state.sql_text_area_updated_sf,
             height=145
             )
 
@@ -289,7 +289,7 @@ def convert_df_obj_to_str(df):
 
 ## Revert back to original DataFrame if conversion was done ##
 def revert_df_original():
-    df = stf.return_sf_query_df(st.session_state.sql_text_submitted)
+    df = stf.return_sf_query_df(st.session_state.sql_text_submitted_sf)
     st.session_state.df_sf = df
     st.session_state.df_reverted_sf = True
     st.session_state.df_converted_sf = False
