@@ -114,11 +114,11 @@ def update_sql_ms(sql):
         order_by_clause = ''
 
     if st.session_state.rows_to_limit_ms:
-        limit_rows_clause = f'\nlimit {str(st.session_state.rows_to_limit_ms)}'
+        sql_top = sql.replace('select', f'select top {str(st.session_state.rows_to_limit_ms)}')
     else:
-        limit_rows_clause = ''
+        sql_top = sql
 
-    updated_sql = sql + where_clause + order_by_clause + limit_rows_clause
+    updated_sql = sql_top + where_clause + order_by_clause
     st.session_state.sql_query_ms = updated_sql
     st.session_state.sql_text_area_updated_ms = updated_sql
 
@@ -146,12 +146,11 @@ def reset_df_display_ms():
     st.session_state.pandas_profile_failed_ms = False
     st.session_state.df_converted_ms = False
     st.session_state.pandas_profile_complete_ms = False
-    st.session_state.dtale_running = False
 
 def submit_query_ms():
     reset_df_display_ms()
     try:
-        df = stf.return_ms_query_df(sql_text_area)
+        df = stf.return_ms_query_df(st.session_state.engine_ms, sql_text_area)
         st.session_state.sql_text_submitted_ms = sql_text_area
         st.session_state.df_ms = df
         st.session_state.display_df_ms = True
@@ -188,7 +187,8 @@ if st.session_state.connected_to_ms:
             st.session_state.updated_order_by_ms = ''
 
         if 'sql_query_ms' not in st.session_state:
-            st.session_state.sql_query_ms = st.session_state.sql_base_ms + f'\nlimit {st.session_state.rows_to_limit_ms}'
+            # st.session_state.sql_query_ms = st.session_state.sql_base_ms + f'\nlimit {st.session_state.rows_to_limit_ms}'
+            st.session_state.sql_query_ms = st.session_state.sql_base_ms.replace('select', f'select top {st.session_state.rows_to_limit_ms}')
 
 
         limit_rows_ms, where_clause_ms, order_by_clause_ms = st.columns(3)
@@ -215,137 +215,137 @@ if st.session_state.connected_to_ms:
         st.error(f'Error: {e}')
 
 
-# ### 4. Profile the dataframe using pandas profiling library or dtale library ###
-# ## functions called to proflie dataframe when profile buttons are clicked ##
-# def profile_data_panda(df):
-#     st.session_state.display_pandas_profile_sf = True
-#     st.session_state.pandas_profile_failed_sf = False
-#     st.session_state.pandas_profile_complete_sf = False
-#     st.session_state.processing = True
-#     try:
-#         st.session_state.pr_sf = ProfileReport(df,
-#                                 title=db_selected + '.' + schema_selected + '.' + table_selected,
-#                                 minimal=True,
-#                                 explorative=False,
-#                                 correlations=None,
-#                                 infer_dtypes=False,
-#                                 vars={
-#                                     "num": {"low_categorical_threshold": 0},
-#                                     "cat": {
-#                                         "length": True,
-#                                         "characters": False,
-#                                         "words": False,
-#                                         "n_obs": 10,
-#                                     },
-#                                 },
-#                                 orange_mode=True)
-#     except Exception as e:
-#         logger.error(f'Error: {e}')
-#         st.error(f'Error: {e}')
-#         st.session_state.processing = False
+### 4. Profile the dataframe using pandas profiling library or dtale library ###
+## functions called to proflie dataframe when profile buttons are clicked ##
+def profile_data_panda(df):
+    st.session_state.display_pandas_profile_ms = True
+    st.session_state.pandas_profile_failed_ms = False
+    st.session_state.pandas_profile_complete_ms = False
+    st.session_state.processing = True
+    try:
+        st.session_state.pr_ms = ProfileReport(df,
+                                title=st.session_state.database_ms + '.' + schema_selected + '.' + table_selected,
+                                minimal=True,
+                                explorative=False,
+                                correlations=None,
+                                infer_dtypes=False,
+                                vars={
+                                    "num": {"low_categorical_threshold": 0},
+                                    "cat": {
+                                        "length": True,
+                                        "characters": False,
+                                        "words": False,
+                                        "n_obs": 10,
+                                    },
+                                },
+                                orange_mode=True)
+    except Exception as e:
+        logger.error(f'Error: {e}')
+        st.error(f'Error: {e}')
+        st.session_state.processing = False
 
 
-# ## save pandas profile report to output folder ##
-# def save_profile_report(pr):
-#     file_name = f'{database_name}-{db_selected}.{schema_selected}.{table_selected}-{cf.gvar.current_date_pst}.html'
-#     output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
+## save pandas profile report to output folder ##
+def save_profile_report(pr):
+    file_name = f'{database_name}-{st.session_state.database_ms}.{schema_selected}.{table_selected}-{cf.gvar.current_date_pst}.html'
+    output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
 
-#     try:
-#         pr.to_file(output_file_path)
-#         logger.info(f'Profile report saved to {output_file_path}')
-#         st.success(f'Profile report saved to {output_file_path}')
-#         # os.system(f'start {cf.gvar.path_outputs}') ## open output folder in windows but doesn't work in linux
-#     except Exception as e:
-#         logger.error(f'Error: {e}')
-#         st.error(f'Error: {e}')
-
-
-# ## function for running dtale to profile data ##
-# def profile_data_dtale(df):
-#     if not st.session_state.dtale_running:
-#         st.session_state.dtale = dtale.show(df, host='localhost')
-#         st.session_state.dtale.open_browser()
-#         st.session_state.dtale_running = True
-#     else:
-#         st.session_state.dtale.kill()
-#         st.session_state.dtale_running = False
+    try:
+        pr.to_file(output_file_path)
+        logger.info(f'Profile report saved to {output_file_path}')
+        st.success(f'Profile report saved to {output_file_path}')
+        # os.system(f'start {cf.gvar.path_outputs}') ## open output folder in windows but doesn't work in linux
+    except Exception as e:
+        logger.error(f'Error: {e}')
+        st.error(f'Error: {e}')
 
 
-# ## Convert object columns to string values to avoid pandas profiling errors ##
-# def convert_df_obj_to_str(df):
-#     for col in df.columns:
-#         if df[col].dtype.name == 'object':
-#             df[col] = df[col].astype(str)
-#     logger.info('Pandas Dataframe Object columns converted to string values')
-#     st.session_state.df_converted_sf = True
-#     st.session_state.df_reverted_sf = False
-#     st.session_state.pandas_profile_failed_sf = False
+## function for running dtale to profile data ##
+def profile_data_dtale(df):
+    if not st.session_state.dtale_running:
+        st.session_state.dtale = dtale.show(df, host='localhost')
+        st.session_state.dtale.open_browser()
+        st.session_state.dtale_running = True
+    else:
+        st.session_state.dtale.kill()
+        st.session_state.dtale_running = False
 
 
-# ## Revert back to original DataFrame if conversion was done ##
-# def revert_df_original():
-#     df = stf.return_sf_query_df(st.session_state.sql_text_submitted)
-#     st.session_state.df_sf = df
-#     st.session_state.df_reverted_sf = True
-#     st.session_state.df_converted_sf = False
+## Convert object columns to string values to avoid pandas profiling errors ##
+def convert_df_obj_to_str(df):
+    for col in df.columns:
+        if df[col].dtype.name == 'object':
+            df[col] = df[col].astype(str)
+    logger.info('Pandas Dataframe Object columns converted to string values')
+    st.session_state.df_converted_ms = True
+    st.session_state.df_reverted_ms = False
+    st.session_state.pandas_profile_failed_ms = False
 
 
-# ## display dataframe of queried data along with profile buttons ##
-# if st.session_state.display_df_sf:
-#     if st.session_state.display_entire_df_sf:
-#         st.write("All of queried data:")
-#         st.session_state.df_sf
-#     else:
-#         st.write("Displaying first 1000 rows of queried data:")
-#         st.session_state.df_sf[:1000]
-
-#     ## define streamlit objects and size of columns ##
-#     diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button = st.columns([4, 3, 0.7, 2.3, 2, 2, 0.7, 2.3, 2])
-
-#     diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df_sf)
+## Revert back to original DataFrame if conversion was done ##
+def revert_df_original():
+    df = stf.return_ms_query_df(st.session_state.engine_ms, st.session_state.sql_text_submitted_ms)
+    st.session_state.df_ms = df
+    st.session_state.df_reverted_ms = True
+    st.session_state.df_converted_ms = False
 
 
-# ## Display Pandas Profile report ##
-# if st.session_state.display_pandas_profile_sf:
-#     try:
-#         st_profile_report(st.session_state.pr_sf, navbar=True)
-#         st.session_state.pandas_profile_complete_sf = True
-#         st.session_state.processing = False
-#     except Exception as e:
-#         logger.error(f'Error while creating pandas profilng report')
-#         st.error(f'Error: {e}')
-#         st.session_state.display_pandas_profile_sf = False
-#         st.session_state.pandas_profile_failed_sf = True
-#         st.session_state.df_converted_sf = False
-#     st.session_state.processing = False
+## display dataframe of queried data along with profile buttons ##
+if st.session_state.display_df_ms:
+    if st.session_state.display_entire_df_ms:
+        st.write("All of queried data:")
+        st.session_state.df_ms
+    else:
+        st.write("Displaying first 1000 rows of queried data:")
+        st.session_state.df_ms[:1000]
+
+    ## define streamlit objects and size of columns ##
+    diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button = st.columns([4, 3, 0.7, 2.3, 2, 2, 0.7, 2.3, 2])
+
+    diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df_ms)
 
 
-# ### buttons to toggle based on pandas profiling result ###
-# if st.session_state.display_df_sf:
-#     if not st.session_state.processing:
+## Display Pandas Profile report ##
+if st.session_state.display_pandas_profile_ms:
+    try:
+        st_profile_report(st.session_state.pr_ms, navbar=True)
+        st.session_state.pandas_profile_complete_ms = True
+        st.session_state.processing = False
+    except Exception as e:
+        logger.error(f'Error while creating pandas profilng report')
+        st.error(f'Error: {e}')
+        st.session_state.display_pandas_profile_ms = False
+        st.session_state.pandas_profile_failed_ms = True
+        st.session_state.df_converted_ms = False
+    st.session_state.processing = False
 
-#         ## buttons for pandas profiling ##
-#         pandas_profile_label.text('Pandas Profile:')
 
-#         if not st.session_state.pandas_profile_failed_sf:
-#             pandas_profile_button.button('Generate profile report', on_click=profile_data_panda, args=[st.session_state.df_sf])
+### buttons to toggle based on pandas profiling result ###
+if st.session_state.display_df_ms:
+    if not st.session_state.processing:
 
-#         if not st.session_state.df_converted_sf:
-#             convert_df_button.button('Convert values to string (For Pandas Profile bugs)', on_click=convert_df_obj_to_str, args=[st.session_state.df_sf])
-#             if st.session_state.pandas_profile_failed_sf:
-#                 pandas_profile_button.write('Profiling failed. Please convert object columns to string values to avoid errors.')
+        ## buttons for pandas profiling ##
+        pandas_profile_label.text('Pandas Profile:')
 
-#         if st.session_state.df_converted_sf and not st.session_state.df_reverted_sf:
-#             convert_df_button.button('Revert back to original DataFrame', on_click=revert_df_original)
+        if not st.session_state.pandas_profile_failed_ms:
+            pandas_profile_button.button('Generate profile report', on_click=profile_data_panda, args=[st.session_state.df_ms])
 
-#         if st.session_state.pandas_profile_complete_sf and not st.session_state.pandas_profile_failed_sf:
-#             output_profile_button.button('Save profile report', on_click=save_profile_report, args=[st.session_state.pr_sf])
+        if not st.session_state.df_converted_ms:
+            convert_df_button.button('Convert values to string (For Pandas Profile bugs)', on_click=convert_df_obj_to_str, args=[st.session_state.df_ms])
+            if st.session_state.pandas_profile_failed_ms:
+                pandas_profile_button.write('Profiling failed. Please convert object columns to string values to avoid errors.')
 
-#         ## buttons for dtale profiling ##
-#         dtale_label.text('Dtale Profile:')
+        if st.session_state.df_converted_ms and not st.session_state.df_reverted_ms:
+            convert_df_button.button('Revert back to original DataFrame', on_click=revert_df_original)
 
-#         if not st.session_state.dtale_running:
-#             dtale_button_text = 'Run dtale to profile data'
-#         else:
-#             dtale_button_text = 'Stop running dtale'
-#         dtale_profile_button.button(dtale_button_text, on_click=profile_data_dtale, args=[st.session_state.df_sf])
+        if st.session_state.pandas_profile_complete_ms and not st.session_state.pandas_profile_failed_ms:
+            output_profile_button.button('Save profile report', on_click=save_profile_report, args=[st.session_state.pr_ms])
+
+        ## buttons for dtale profiling ##
+        dtale_label.text('Dtale Profile:')
+
+        if not st.session_state.dtale_running:
+            dtale_button_text = 'Run dtale to profile data'
+        else:
+            dtale_button_text = 'Stop running dtale'
+        dtale_profile_button.button(dtale_button_text, on_click=profile_data_dtale, args=[st.session_state.df_ms])

@@ -146,7 +146,7 @@ def reset_df_display():
     st.session_state.pandas_profile_failed_sf = False
     st.session_state.df_converted_sf = False
     st.session_state.pandas_profile_complete_sf = False
-    st.session_state.dtale_running = False
+    # st.session_state.dtale_running = False
 
 def submit_query():
     reset_df_display()
