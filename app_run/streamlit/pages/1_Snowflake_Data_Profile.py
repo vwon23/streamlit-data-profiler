@@ -307,7 +307,7 @@ if st.session_state.display_df_sf:
     ## define streamlit objects and size of columns ##
     diplay_all_df, convert_df_button, gap1, pandas_profile_label, pandas_profile_button, output_profile_button, gap2, dtale_label, dtale_profile_button = st.columns([4, 3, 0.7, 2.3, 2, 2, 0.7, 2.3, 2])
 
-    diplay_all_df.checkbox('Display all of queried data', key='display_entire_df', value=st.session_state.display_entire_df_sf)
+    diplay_all_df.checkbox('Display all of queried data', key='display_entire_df_sf', value=st.session_state.display_entire_df_sf)
 
 
 ## Display Pandas Profile report ##
