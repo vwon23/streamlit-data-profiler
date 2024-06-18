@@ -2,7 +2,19 @@ import streamlit as st
 import os, sys
 import utils.st_functions as stf
 
+## Find path of the script then find the app_run path
+path_script = os.path.abspath(__file__)
+path_app_run = os.path.dirname(os.path.dirname(path_script))
+
+sys.path.append(path_app_run)
+
+
 st.set_page_config(page_title="Home" ,page_icon="👋")
+
+## define logger name and store global logger as st.session_state.logger to be used by other pages
+logger_name = 'streamlit_data_profile'
+st.session_state.logger = stf.st_initialize(path_app_run, logger_name)
+
 
 
 st.write("# Welcome to Vince's Streamlit site! 👋")
@@ -34,18 +46,3 @@ st.markdown(
 )
 
 st.sidebar.success("Select a page above.")
-
-
-
-## Find path of the script then find the app_run path
-path_script = os.path.abspath(__file__)
-path_app_run = os.path.dirname(os.path.dirname(path_script))
-
-sys.path.append(path_app_run)
-
-## use common functions to initalize global logger ##
-import utilities.common_functions as cf
-
-## define logger name and store global logger as st.session_state.logger to be used by other pages
-logger_name = 'streamlit_data_profile'
-st.session_state.logger = stf.st_initialize(path_app_run, logger_name)
