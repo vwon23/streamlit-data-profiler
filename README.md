@@ -5,13 +5,13 @@
 
 ![Alt text](images/example2.png)
 
-This Streamlit app was devloped to easily profile data from different types of databases. This application provides options to profile data using 2 different python libraries.
+This Streamlit app was developed to provide easy method of profiling data from different types of databases. This application provides 2 options to profile data using different python libraries.
 
 Option 1: [ydata-profiling](https://github.com/ydataai/ydata-profiling)
 
 Option 2: [dtale](https://github.com/man-group/dtale) (Credit: Andrew Schonfeld)
 
-Currently application can connect to Snowflake and Microsoft SQL Server.
+Currently, application connection options is lmited to Snowflake and Microsoft SQL Server.
 
 <!-- GETTING STARTED -->
 ## Getting Started
