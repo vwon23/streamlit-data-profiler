@@ -8,5 +8,6 @@ zwip*.*
 zold*/
 zold*.*
 *.sh
+*.bat
 Dockerfile
 app_run/config/config_*.cfg

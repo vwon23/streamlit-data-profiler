@@ -6,7 +6,6 @@ from ydata_profiling import ProfileReport
 from streamlit_ydata_profiling import st_profile_report
 import dtale
 
-import sqlalchemy as sal
 import utils.st_functions as stf
 
 
