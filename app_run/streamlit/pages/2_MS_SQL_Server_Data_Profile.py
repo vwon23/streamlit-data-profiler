@@ -15,15 +15,16 @@ path_app_run = os.path.dirname(os.path.dirname(os.path.dirname(path_script)))
 
 sys.path.append(path_app_run)
 
-## use common functions to initalize global variable and define logger ##
+## Use common functions to retrieve config values and common libraries for connections
 import utilities.common_functions as cf
 
 
 #### Streamlit code starts here ####
-st.set_page_config(page_title="MSSQL Data Profile",layout="wide", page_icon="📊")
-database_name = 'ms_sql_server'
-logger_name = f'{database_name}_data_profile'
-logger = stf.st_initialize(path_app_run, logger_name)
+database_name = 'MSSQL'
+
+st.set_page_config(page_title=f"{database_name} Data Profile",layout="wide", page_icon="📊")
+logger = st.session_state.logger
+
 
 st.markdown("# Microsoft SQL Server Data Profile")
 st.write("This page uses SQL Alchemy library to connect to SQL Server to query data. Then queried data can be profiled using pandas profiling or dtale.")
