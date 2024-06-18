@@ -18,7 +18,7 @@ Below is instruction on how to run this streamlit application.
 
 ### Prerequisites
 
-This application require python version > 3.7 and < 3.12. (Version 3.11 recommended)
+This application require python version > 3.7 and < 3.12. (version 3.11 recommended)
 
 ### Installation
 
