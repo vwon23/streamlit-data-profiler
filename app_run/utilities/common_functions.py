@@ -5,18 +5,17 @@ import logging, logging.config
 
 import datetime as dt
 from pytz import timezone
-import re
 
 import pandas as pd
-import smtplib
-import boto3
-import pymysql
 import snowflake.connector as sf
 import sqlalchemy as sal
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
-# import streamlit as st
+# from email.mime.multipart import MIMEMultipart
+# from email.mime.text import MIMEText
+# import smtplib
+# import boto3
+# import pymysql
+
 
 ### - functions used for initializing global variables and logger - ###
 ## function to initialize global variables and logger ##
@@ -107,7 +106,7 @@ def get_config():
         # gvar.mysql_username = config.get('MYSQL', 'username')
         # gvar.mysql_password = config.get('MYSQL', 'password')
 
-        gvar.mssql_host = config.get('MSQL', 'host')
+        gvar.mssql_host = config.get('MSSQL', 'host')
         gvar.mssql_port = config.get('MSSQL', 'port')
         gvar.mssql_username = config.get('MSSQL', 'username')
         gvar.mssql_password = config.get('MSSQL', 'password')
@@ -231,34 +230,6 @@ def convert_timestmp_int(timestmp_int):
 
 
 #####----  Database functions  ----#####
-
-# ###-- mysql functions --###
-# def connect_mysql():
-#     '''
-#     Creates connection to mysql and returns connection
-
-#     Parameters
-#     ---------------
-#     None
-
-#     Returns
-#     ---------------
-#     conn
-#         connection returned using function pymysql.connect
-#     '''
-
-#     conn = pymysql.connect(host=gvar.mysql_host,
-#                             user=gvar.mysql_username,
-#                             password=gvar.mysql_password,
-#                             db=gvar.mysql_database,
-#                             port=int(gvar.mysql_port)
-#                             )
-#     if conn is None:
-#         logger.error(f'Error connecting to the MySQL database {gvar.mysql_host}')
-#     else:
-#         logger.info(f'MySQL connection established to {gvar.mysql_host}')
-#     return conn
-
 
 
 ###--- Snowflake functions ---###
@@ -414,153 +385,183 @@ def sal_exec_query_return_df(engine, query):
         logger.error(f'Error executing query using engine\n' + f'{e}')
 
 
-###---  AWS functions   ---###
-def s3_upload_file(file_path, bucket_name, key):
-    '''
-    uploads file to aws s3 bucket
 
-    Parameters
-    ---------------
-    file_path: str
-        The path of file to upload
-    bucket_name: str
-        The name of aws s3 bucket
-    key: str
-        The key value to upload file as
-    '''
+# ###-- mysql functions --###
+# def connect_mysql():
+#     '''
+#     Creates connection to mysql and returns connection
 
-    s3c = boto3.client('s3')
-    try:
-        s3c.upload_file(file_path, bucket_name, key)
-    except:
-        logger.error(f'Error occured while uploading {file_path} to aws s3 bucket {bucket_name}' + '\n')
-    else:
-        logger.info(f'Successfully uploaded {file_path} to aws s3 bucket {bucket_name} as {key}' + '\n')
+#     Parameters
+#     ---------------
+#     None
 
+#     Returns
+#     ---------------
+#     conn
+#         connection returned using function pymysql.connect
+#     '''
 
-def s3_upload_log(file_path, bucket_name, logfile_name):
-    '''
-    uploads logfile to aws s3 bucket/logs folder
-
-    '''
-
-    bucket_path_logs = 'logs'
-    bucket_logfile_key = f'{bucket_path_logs}/{logfile_name}'
-    s3_upload_file(file_path, bucket_name, bucket_logfile_key)
+#     conn = pymysql.connect(host=gvar.mysql_host,
+#                             user=gvar.mysql_username,
+#                             password=gvar.mysql_password,
+#                             db=gvar.mysql_database,
+#                             port=int(gvar.mysql_port)
+#                             )
+#     if conn is None:
+#         logger.error(f'Error connecting to the MySQL database {gvar.mysql_host}')
+#     else:
+#         logger.info(f'MySQL connection established to {gvar.mysql_host}')
+#     return conn
 
 
 
-def s3_clean_bucket(bucket_name, prefix, n=365):
-    '''
-    Deletes objects older than n days inside s3 bucket. Filters objects based on prefix
+# ###---  AWS functions   ---###
+# def s3_upload_file(file_path, bucket_name, key):
+#     '''
+#     uploads file to aws s3 bucket
 
-    Parameters
-    ---------------
-    bucket_name: str
-        The name of aws s3 bucket
-    prefix: str
-        String prefix to filter objects
-    n: int
-        The number of days older than current date to remove objects
-    '''
+#     Parameters
+#     ---------------
+#     file_path: str
+#         The path of file to upload
+#     bucket_name: str
+#         The name of aws s3 bucket
+#     key: str
+#         The key value to upload file as
+#     '''
 
-    s3r = boto3.resource('s3')
-    s3_bucket = s3r.Bucket(bucket_name)
-
-    logger.info(f'Removing objects older than {n} days inside s3 bucket {bucket_name} with prefix {prefix}')
-    for obj in s3_bucket.objects.filter(Prefix=prefix):
-        if obj.last_modified < gvar.current_pst - dt.timedelta(days=n):
-            logger.info(f'{obj.key} is older than {n} days and is deleted')
-            obj.delete()
-
-
-
-###---  E-mail functions   ---###
-def send_email(mail_to, mail_msg):
-    '''
-    Sets up sftp for email and sends e-mail.
-
-    Parameters
-    ---------------
-    mail_to: str
-        E-mail address(s) to send E-mail to
-    mail_msg: str
-        Content of E-mail
-
-    Returns
-    ---------------
-    None
-    '''
-
-    host = gvar.email_host
-    #recipients = mail_to.split(";")
-    recipients = re.split('; |, |\*|\n', mail_to)
-
-    server = smtplib.SMTP(host, 25)
-    try:
-        server.connect(host, 25)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(gvar.email_from, gvar.smtp_password)
-        server.sendmail(gvar.email_from, recipients, mail_msg)
-        logger.info('E-mail sent successfully to {recipients}')
-    except Exception as e:
-        logger.error({e})
-    server.close()
+#     s3c = boto3.client('s3')
+#     try:
+#         s3c.upload_file(file_path, bucket_name, key)
+#     except:
+#         logger.error(f'Error occured while uploading {file_path} to aws s3 bucket {bucket_name}' + '\n')
+#     else:
+#         logger.info(f'Successfully uploaded {file_path} to aws s3 bucket {bucket_name} as {key}' + '\n')
 
 
-def send_email_df(mail_to, df):
-    '''
-    Sets up sftp for email and sends DataFrame in an e-mail.
+# def s3_upload_log(file_path, bucket_name, logfile_name):
+#     '''
+#     uploads logfile to aws s3 bucket/logs folder
 
-    Parameters
-    ---------------
-    mail_to: str
-        E-mail address(s) to send E-mail to
-    df: str
-        DataFrame to send E-mail as
+#     '''
 
-    Returns
-    ---------------
-    None
-    '''
-    host = gvar.email_host
-    #recipients = mail_to.split(";")
-    recipients = re.split('; |, |\*|\n', mail_to)
+#     bucket_path_logs = 'logs'
+#     bucket_logfile_key = f'{bucket_path_logs}/{logfile_name}'
+#     s3_upload_file(file_path, bucket_name, bucket_logfile_key)
 
-    html_table = df.to_html(index=False)
 
-    html_content = f"""
-    <html>
-    <body>
-        <p>Hi,<br>
-        Please find the DataFrame below:<br>
-        </p>
-        {html_table}
-    </body>
-    </html>
-    """
 
-    message = MIMEMultipart("alternative")
-    message['From'] = gvar.email_from
-    message['To'] = '; '.join(map(str, recipients))
-    message['Subject'] = 'Pandas DataFrame in HTML Format'
+# def s3_clean_bucket(bucket_name, prefix, n=365):
+#     '''
+#     Deletes objects older than n days inside s3 bucket. Filters objects based on prefix
 
-    part = MIMEText(html_content, "html")
-    message.attach(part)
+#     Parameters
+#     ---------------
+#     bucket_name: str
+#         The name of aws s3 bucket
+#     prefix: str
+#         String prefix to filter objects
+#     n: int
+#         The number of days older than current date to remove objects
+#     '''
 
-    server = smtplib.SMTP(host, 25)
+#     s3r = boto3.resource('s3')
+#     s3_bucket = s3r.Bucket(bucket_name)
 
-    try:
-        server.connect(host, 25)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(gvar.email_from, gvar.smtp_password)
-        server.sendmail(gvar.email_from, recipients, message.as_string())
-        logger.info('E-mail sent successfully to {recipients}')
-    except Exception as e:
-        logger.error({e})
+#     logger.info(f'Removing objects older than {n} days inside s3 bucket {bucket_name} with prefix {prefix}')
+#     for obj in s3_bucket.objects.filter(Prefix=prefix):
+#         if obj.last_modified < gvar.current_pst - dt.timedelta(days=n):
+#             logger.info(f'{obj.key} is older than {n} days and is deleted')
+#             obj.delete()
 
-    server.close()
+
+
+# ###---  E-mail functions   ---###
+# def send_email(mail_to, mail_msg):
+#     '''
+#     Sets up sftp for email and sends e-mail.
+
+#     Parameters
+#     ---------------
+#     mail_to: str
+#         E-mail address(s) to send E-mail to
+#     mail_msg: str
+#         Content of E-mail
+
+#     Returns
+#     ---------------
+#     None
+#     '''
+
+#     host = gvar.email_host
+#     #recipients = mail_to.split(";")
+#     recipients = re.split('; |, |\*|\n', mail_to)
+
+#     server = smtplib.SMTP(host, 25)
+#     try:
+#         server.connect(host, 25)
+#         server.ehlo()
+#         server.starttls()
+#         server.ehlo()
+#         server.login(gvar.email_from, gvar.smtp_password)
+#         server.sendmail(gvar.email_from, recipients, mail_msg)
+#         logger.info('E-mail sent successfully to {recipients}')
+#     except Exception as e:
+#         logger.error({e})
+#     server.close()
+
+
+# def send_email_df(mail_to, df):
+#     '''
+#     Sets up sftp for email and sends DataFrame in an e-mail.
+
+#     Parameters
+#     ---------------
+#     mail_to: str
+#         E-mail address(s) to send E-mail to
+#     df: str
+#         DataFrame to send E-mail as
+
+#     Returns
+#     ---------------
+#     None
+#     '''
+#     host = gvar.email_host
+#     #recipients = mail_to.split(";")
+#     recipients = re.split('; |, |\*|\n', mail_to)
+
+#     html_table = df.to_html(index=False)
+
+#     html_content = f"""
+#     <html>
+#     <body>
+#         <p>Hi,<br>
+#         Please find the DataFrame below:<br>
+#         </p>
+#         {html_table}
+#     </body>
+#     </html>
+#     """
+
+#     message = MIMEMultipart("alternative")
+#     message['From'] = gvar.email_from
+#     message['To'] = '; '.join(map(str, recipients))
+#     message['Subject'] = 'Pandas DataFrame in HTML Format'
+
+#     part = MIMEText(html_content, "html")
+#     message.attach(part)
+
+#     server = smtplib.SMTP(host, 25)
+
+#     try:
+#         server.connect(host, 25)
+#         server.ehlo()
+#         server.starttls()
+#         server.ehlo()
+#         server.login(gvar.email_from, gvar.smtp_password)
+#         server.sendmail(gvar.email_from, recipients, message.as_string())
+#         logger.info('E-mail sent successfully to {recipients}')
+#     except Exception as e:
+#         logger.error({e})
+
+#     server.close()
