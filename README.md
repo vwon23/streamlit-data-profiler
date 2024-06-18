@@ -11,7 +11,7 @@ Option 1: [ydata-profiling](https://github.com/ydataai/ydata-profiling)
 
 Option 2: [dtale](https://github.com/man-group/dtale) (Credit: Andrew Schonfeld)
 
-Currently, application connection options is lmited to Snowflake and Microsoft SQL Server.
+Currently, application connection options are lmited to Snowflake and Microsoft SQL Server.
 
 <!-- GETTING STARTED -->
 ## Getting Started
