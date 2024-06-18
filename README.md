@@ -1,11 +1,15 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-
+####
 ![Alt text](images/example.png)
 
 ![Alt text](images/example2.png)
 
-This Streamlit app is devloped for profiling data from different types of databases.
+This Streamlit app was devloped to easily profile data from different types of databases. This application provides options to profile data using 2 different python libraries.
+
+Option 1: [ydata-profiling](https://github.com/ydataai/ydata-profiling)
+
+Option 2: [dtale](https://github.com/man-group/dtale) (Credit: Andrew Schonfeld)
 
 <!-- GETTING STARTED -->
 ## Getting Started
