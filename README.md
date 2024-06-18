@@ -14,7 +14,7 @@ Below is instruction on how to run this streamlit application.
 
 ### Prerequisites
 
-This application require python version > 3.6 and < 3.12.
+This application require python version > 3.7 and < 3.12. (Version 3.11 recommended)
 
 ### Installation
 
@@ -55,7 +55,7 @@ This application require python version > 3.6 and < 3.12.
     dotenv = true
    ```
 
-5. Run the streamlit application
+5. Run the streamlit application.
    ```sh
    streamlit run app_run/streamlit/Home.py
    ```
