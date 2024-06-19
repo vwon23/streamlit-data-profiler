@@ -58,8 +58,14 @@ def return_sf_query_df(sql):
     return df
 
 
-
 ## functions used to retreive data from SQL Server and return df ##
+@st.cache_data
+def list_ms_databases(_engine):
+    df = cf.sal_exec_query_return_df(_engine, msq.list_dbs)
+    list_dbs = df['name'].tolist()
+    list_dbs.sort()
+    return list_dbs
+
 @st.cache_data
 def list_ms_schemas(_engine, db):
     df = cf.sal_exec_query_return_df(_engine, msq.list_schemas.format(db_name=db))
