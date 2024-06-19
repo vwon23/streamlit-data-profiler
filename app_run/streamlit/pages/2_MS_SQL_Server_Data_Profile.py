@@ -75,8 +75,9 @@ def connect_to_mssql(server, database, windows_auth):
         st.session_state.engine_ms = engine
         st.session_state.connected_to_ms = True
     except Exception as e:
-        logger.error(f'Error: {e}')
-        st.error(f'Error connecting to SQL Server: {e}')
+        err_text = f'Error connecting to SQL Server {server}: {e}'
+        logger.error(err_text)
+        st.error(err_text)
 
 ## Form to enter login information to connect to Snowflake ##
 with st.sidebar.form('mssql_connection_form'):
@@ -161,21 +162,30 @@ def submit_query_ms():
 
 ## Execution of step #2 ##
 if st.session_state.connected_to_ms:
-    column_schema, column_table = st.columns(2)
+    column_db, column_schema, column_table = st.columns(3)
 
     try:
-        df_schemas = stf.list_ms_schemas(st.session_state.engine_ms, st.session_state.database_ms)
+        ## Display list of databases if input was not provided
+        if not st.session_state.database_ms:
+            list_dbs = stf.list_ms_databases(st.session_state.engine_ms)
+        else:
+            list_dbs = [st.session_state.database_ms]
+        db_selected = column_db.selectbox(
+        "Select a database:",
+        list_dbs)
+
+        df_schemas = stf.list_ms_schemas(st.session_state.engine_ms, db_selected)
         schema_selected = column_schema.selectbox(
         "Select a schema:",
         df_schemas)
 
-        df_tables = stf.list_ms_tables(st.session_state.engine_ms, st.session_state.database_ms, schema_selected)
+        df_tables = stf.list_ms_tables(st.session_state.engine_ms, db_selected, schema_selected)
         table_selected = column_table.selectbox(
         "Select a table:",
         df_tables)
 
-        st.write("You selected:", st.session_state.database_ms + '.' + schema_selected + '.' + table_selected)
-        generate_sql_base_ms(st.session_state.database_ms, schema_selected, table_selected)
+        st.write("You selected:", db_selected + '.' + schema_selected + '.' + table_selected)
+        generate_sql_base_ms(db_selected, schema_selected, table_selected)
 
         if 'rows_to_limit_ms' not in st.session_state:
             st.session_state.rows_to_limit_ms = 50000
@@ -224,7 +234,7 @@ def profile_data_panda(df):
     st.session_state.processing = True
     try:
         st.session_state.pr_ms = ProfileReport(df,
-                                title=st.session_state.database_ms + '.' + schema_selected + '.' + table_selected,
+                                title=db_selected + '.' + schema_selected + '.' + table_selected,
                                 minimal=True,
                                 explorative=False,
                                 correlations=None,
@@ -247,7 +257,7 @@ def profile_data_panda(df):
 
 ## save pandas profile report to output folder ##
 def save_profile_report(pr):
-    file_name = f'{database_name}-{st.session_state.database_ms}.{schema_selected}.{table_selected}-{cf.gvar.current_date_pst}.html'
+    file_name = f'{database_name}-{db_selected}.{schema_selected}.{table_selected}-{cf.gvar.current_date_pst}.html'
     output_file_path = os.path.join(cf.gvar.path_outputs, file_name)
 
     try:

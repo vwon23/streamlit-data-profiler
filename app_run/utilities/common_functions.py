@@ -307,8 +307,12 @@ def sf_exec_query_return_df(query):
     return result_df
 
 
-###---  SQL Alchemy functions ---###
-def sal_create_enginem_ms_sql(server, database, windows_auth=True):
+
+
+#### ----  SQL Alchemy functions ----  ####
+
+###--- Microsoft SQL Server functions ---###
+def sal_create_enginem_ms_sql(server, database=None, windows_auth=True):
     '''
     Creates engine for connecting to Microsoft SQL Server
 
@@ -327,38 +331,55 @@ def sal_create_enginem_ms_sql(server, database, windows_auth=True):
     '''
     mssql_engine_url_template = {
         'windows_auth': {
-            'url_format': 'mssql+pyodbc://{server}/{database}?trusted_connection=yes&driver={driver}',
+            'url_format': 'mssql+pyodbc://{server}/master?trusted_connection=yes&driver={driver}',
+            'url_format_db': 'mssql+pyodbc://{server}/{database}?trusted_connection=yes&driver={driver}',
             # 'driver': 'SQL Server Native Client 11.0'
             'driver': 'ODBC+Driver+17+for+SQL+Server'
             },
         'sql_auth': {
-            'url_format': 'mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}',
+            'url_format': 'mssql+pyodbc://{username}:{password}@{server}/master?driver={driver}',
+            'url_format_db': 'mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}',
             'driver': 'ODBC+Driver+17+for+SQL+Server'
             }
         }
 
-    # driver = 'SQL+Server+Native+Client+11.0'
-
     if windows_auth:
-        mssql_engine_url = mssql_engine_url_template['windows_auth']['url_format'].format(
-            server=server,
-            database=database,
-            driver=mssql_engine_url_template['windows_auth']['driver'])
+        if database:
+            mssql_engine_url = mssql_engine_url_template['windows_auth']['url_format_db'].format(
+                server=server,
+                database=database,
+                driver=mssql_engine_url_template['windows_auth']['driver'])
+        else:
+            mssql_engine_url = mssql_engine_url_template['windows_auth']['url_format'].format(
+                server=server,
+                database=database,
+                driver=mssql_engine_url_template['windows_auth']['driver'])
     else:
-        mssql_engine_url = mssql_engine_url_template['sql_auth']['url_format'].format(
-            username=gvar.mssql_username,
-            password=gvar.mssql_password,
-            server=server, database=database,
-            driver=mssql_engine_url_template['sql_auth']['driver'])
+        if database:
+            mssql_engine_url = mssql_engine_url_template['sql_auth']['url_format_db'].format(
+                username=gvar.mssql_username,
+                password=gvar.mssql_password,
+                server=server, database=database,
+                driver=mssql_engine_url_template['sql_auth']['driver'])
+        else:
+            mssql_engine_url = mssql_engine_url_template['sql_auth']['url_format'].format(
+                username=gvar.mssql_username,
+                password=gvar.mssql_password,
+                server=server, database=database,
+                driver=mssql_engine_url_template['sql_auth']['driver'])
 
+    if database:
+        logger_text = f'{server} and database {database}'
+    else:
+        logger_text = f'{server}'
 
-    logger.info(f'Connecting to Microsoft SQL Server {server} and database {database}')
+    logger.info(f'Connecting to Microsoft SQL Server {logger_text}')
     try:
         engine = sal.create_engine(mssql_engine_url)
-        logger.info(f'Successfully connected to Microsoft SQL Server {server} and database {database}')
+        logger.info(f'Successfully connected to Microsoft SQL Server {logger_text}')
         return engine
     except Exception as e:
-        logger.error(f'Error connecting to Microsoft SQL Server {server} and database {database}\n' + f'{e}')
+        logger.error(f'Error connecting to Microsoft SQL Server {logger_text}\n' + f'{e}')
 
 
 def sal_exec_query_return_df(engine, query):

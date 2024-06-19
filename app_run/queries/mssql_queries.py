@@ -1,20 +1,26 @@
+list_dbs = """
+    SELECT distinct name
+    FROM sys.databases
+    WHERE name not in ('master','tempdb','model','msdb');
+"""
+
 list_schemas = """
-    select distinct
+    SELECT distinct
         table_schema
-    from {db_name}.information_schema.tables;
+    FROM {db_name}.information_schema.tables;
 """
 
 list_tables = """
-    select distinct
+    SELECT distinct
         table_name
-    from {db_name}.information_schema.tables
-    where table_schema = '{schema}';
+    FROM {db_name}.information_schema.tables
+    WHERE table_schema = '{schema}';
 """
 
 get_columns = """
-    select  ordinal_position,
+    SELECT  ordinal_position,
             column_name
-    from {db_name}.information_schema.columns
-    where table_schema = '{schema}'
-    and table_name = '{table}';
+    FROM {db_name}.information_schema.columns
+    WHERE table_schema = '{schema}'
+    AND table_name = '{table}';
 """
